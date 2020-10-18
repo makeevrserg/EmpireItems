@@ -1,0 +1,31 @@
+crafting_table:
+  schlatt_coin:
+    display_name: §6Schlatt Coin
+    lore:
+      - '&2Инвестируй в будущее!'
+    permission: empireitems.schlatt_coin
+    enabled: true
+    texture_path: item/schlatt_coin.png
+    model_path: null
+    custom_model_data: 1
+    pattern:
+      - "GGG"
+      - "GXG"
+      - "GGG"
+    ingredients:
+      G: GOLD_NUGGET
+    amount: 1
+  cheems:
+    display_name: §6Смемшная сомбака
+    permission: empireitems.cheems
+    enabled: true
+    texture_path: item/cheems.png
+    model_path: null
+    custom_model_data: 2
+    pattern:
+      - "XXX"
+      - "XGX"
+      - "XXX"
+    ingredients:
+      G: GOLD_NUGGET
+    amount: 1
