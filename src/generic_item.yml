@@ -2,11 +2,11 @@ crafting_table:
   schlatt_coin:
     display_name: §6Schlatt Coin
     lore:
-      - '&2Инвестируй в будущее!'
+      - '§2Инвестируй в будущее!'
     permission: empireitems.schlatt_coin
     enabled: true
     texture_path: item/schlatt_coin.png
-    model_path: null
+    material: STICK
     custom_model_data: 1
     pattern:
       - "GGG"
@@ -15,9 +15,53 @@ crafting_table:
     ingredients:
       G: GOLD_NUGGET
     amount: 1
+    attributes:
+      1:
+        name: GENERIC_MAX_HEALTH
+        amount: 100
+        equipment_slot: HAND
+      2:
+        name: GENERIC_ARMOR
+        amount: 100
+        equipment_slot: HAND
+      3:
+        name: GENERIC_ATTACK_DAMAGE
+        amount: 100
+        equipment_slot: HAND
+      4:
+        name: GENERIC_MOVEMENT_SPEED
+        amount: -2
+        equipment_slot: HAND
+    interact:
+      RIGHT_CLICK:
+        play_particle:
+          name: SMOKE_LARGE
+          count: 100
+          time: 0.1
+        play_sound:
+          name: minecraft:entity.creeper.hurt
+          volume: 1
+          pitch: 1
+        as_console: true
+        execute_commands:
+          - "say aaa"
+        increment_durability: 1
+        decrement_durability: 1
+        remove_potion_effect:
+          - "GLOWING"
+        potion_effect:
+          CONFUSSION:
+            amplifier: 1
+            duration: 1
+    enchantements:
+      smite: 1
+      efficiency: 1
   cheems:
     display_name: §6Смемшная сомбака
+    lore:
+      - '§6Жёлмтая!'
     permission: empireitems.cheems
+    material: STICK
     enabled: true
     texture_path: item/cheems.png
     model_path: null

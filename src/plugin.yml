@@ -4,6 +4,9 @@ version: ${project.version}
 author: RatushevRoman
 api-version: 1.13
 commands:
+  ereload:
+  emp:
   empireitems:
     usage: |
-      /empireitems reload - Перезагружает плагин
+      /ereload - Перезагружает плагин
+      /emp give - дает предмет
