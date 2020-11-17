@@ -1,10 +1,13 @@
 package ru.empireprojekt.empireitems.events;
 
 import org.bukkit.ChatColor;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import ru.empireprojekt.empireitems.ItemManager.mPotionEffect;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 
@@ -21,13 +24,13 @@ public class InteractEvent {
     public List<String> execute_commands;
     public int increment_durability;
     public int decrement_durability;
-    public List<mPotionEffect> potion_effects;
-    public List<String> remove_potion_effect;
+    public Collection<PotionEffect> potion_effects;
+    public List<PotionEffectType> remove_potion_effect;
 
     public InteractEvent() {
         execute_commands = new ArrayList<String>();
-        potion_effects = new ArrayList<mPotionEffect>();
-        remove_potion_effect = new ArrayList<String>();
+        potion_effects = new ArrayList<PotionEffect>();
+        remove_potion_effect = new ArrayList<PotionEffectType>();
     }
 
     public InteractEvent(String click, String play_particle, int particle_count, double particle_time, String play_sound) {

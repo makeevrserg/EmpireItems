@@ -1,12 +1,15 @@
 main: ru.empireprojekt.empireitems.EmpireItems
 name: EmpireItems
-version: ${project.version}
+version: 0.1
 author: RatushevRoman
 api-version: 1.13
 commands:
   ereload:
   emp:
+  emgui:
+  ezip:
   empireitems:
     usage: |
       /ereload - Перезагружает плагин
       /emp give - дает предмет
+      /ezip - создает архив

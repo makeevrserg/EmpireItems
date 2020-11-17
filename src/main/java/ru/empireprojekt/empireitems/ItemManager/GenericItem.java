@@ -5,12 +5,10 @@ import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.sun.prism.paint.Color;
 import org.bukkit.ChatColor;
 import org.bukkit.permissions.Permission;
+import org.bukkit.potion.PotionEffect;
 import ru.empireprojekt.empireitems.events.InteractEvent;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GenericItem {
     public String display_name;
@@ -25,8 +23,10 @@ public class GenericItem {
     public Map<String, Integer> enchantements;
     public List<InteractEvent> events;
     public List<mAttribute> attributes;
+    public Collection<PotionEffect> potionEffects;
     public int amount;
     public int customModelData;
+    public short durability;
 
 
     public void PrintItem() {

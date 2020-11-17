@@ -1,13 +1,13 @@
-crafting_table:
+namespace: empire_items
+yml_items:
   schlatt_coin:
     display_name: §6Schlatt Coin
     lore:
       - '§2Инвестируй в будущее!'
     permission: empireitems.schlatt_coin
     enabled: true
-    texture_path: item/schlatt_coin.png
+    texture_path: item/schlatt_coin
     material: STICK
-    custom_model_data: 1
     pattern:
       - "GGG"
       - "GXG"
@@ -50,7 +50,7 @@ crafting_table:
         remove_potion_effect:
           - "GLOWING"
         potion_effect:
-          CONFUSSION:
+          CONFUSION:
             amplifier: 1
             duration: 1
     enchantements:
@@ -63,13 +63,106 @@ crafting_table:
     permission: empireitems.cheems
     material: STICK
     enabled: true
-    texture_path: item/cheems.png
+    texture_path: item/cheems
     model_path: null
-    custom_model_data: 2
     pattern:
       - "XXX"
       - "XGX"
       - "XXX"
     ingredients:
-      G: GOLD_NUGGET
+      G: schlatt_coin
     amount: 1
+  cigar:
+    display_name: §6Сигарета
+    lore:
+      - '§6Воняет мочой!'
+    permission: empireitems.cigar
+    material: STICK
+    enabled: true
+    texture_path: item/cigar
+    interact:
+      RIGHT_CLICK:
+        play_particle:
+          name: SMOKE_LARGE
+          count: 100
+          time: 0.1
+  novichok:
+    display_name: §6Новичок
+    lore:
+      - '§6Не для употребления!'
+    permission: empireitems.novichok
+    material: POTION
+    enabled: true
+    texture_path: item/novichok
+    interact:
+      drink:
+        execute_commands:
+          - "suicide"
+  sea_apple:
+    display_name: §6Морское яблоко
+    lore:
+      - '§6Мокрое!'
+    permission: empireitems.sea_apple
+    material: APPLE
+    enabled: true
+    texture_path: item/food/sea_apple
+    interact:
+      eat:
+        potion_effect:
+          CONFUSION:
+            amplifier: 100
+            duration: 100
+  mysterious_amulet:
+    display_name: §6Странный амулет
+    lore:
+      - '§6Дрожжит!'
+    permission: empireitems.mysterious_amulet
+    material: ENDER_PEARL
+    enabled: true
+    texture_path: item/mysterious_amulet
+  netherite_elytra:
+    display_name: §6Незеритовые элитры
+    lore:
+      - '§6Летают!'
+    permission: empireitems.netherite_elytra
+    material: ELYTRA
+    enabled: true
+    texture_path: item/netherite_elytra
+    pattern:
+      - "XXX"
+      - "XEN"
+      - "XXX"
+    ingredients:
+      E: ELYTRA
+      N: NETHERITE_INGOT
+    amount: 1
+  vyderlight_sword:
+    display_name: §6Меч удачи
+    lore:
+      - '§6Дарует невероятную удачу!'
+    permission: empireitems.vyderlight_sword
+    material: DIAMOND_SWORD
+    enabled: true
+    texture_path: item/swords/vyderlight_sword
+    pattern:
+      - "EBE"
+      - "ESE"
+      - "XSX"
+    ingredients:
+      B: EMERALD_BLOCK
+      E: EMERALD
+      S: STICK
+    amount: 1
+    enchantements:
+      looting: 10
+      fortune: 10
+  firesword_sword:
+    display_name: §6Меч огня
+    lore:
+      - '§6Горячий!'
+    permission: empireitems.firesword_sword
+    material: DIAMOND_SWORD
+    enabled: true
+    model_path: item/firesword_sword
+
+
