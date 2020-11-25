@@ -4,7 +4,6 @@ import com.google.common.io.Files;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.yaml.snakeyaml.Yaml;
 import ru.empireprojekt.empireitems.EmpireItems;
 
 import java.io.File;
@@ -67,8 +66,7 @@ public class GenericItemManager {
                     itemFilesList.add(
                             new File(this.plugin.getDataFolder() + "\\" + fileEntry.getName())
                     );
-                } else
-                    System.out.println(ChatColor.RED + "В папке плагина не обнаружено файлов с предметами");
+                }
     }
 
 }

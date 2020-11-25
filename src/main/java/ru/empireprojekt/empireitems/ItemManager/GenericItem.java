@@ -23,10 +23,11 @@ public class GenericItem {
     public Map<String, Integer> enchantements;
     public List<InteractEvent> events;
     public List<mAttribute> attributes;
+    public List<String> itemFlags;
     public Collection<PotionEffect> potionEffects;
     public int amount;
     public int customModelData;
-    public short durability;
+    public int durability;
 
 
     public void PrintItem() {

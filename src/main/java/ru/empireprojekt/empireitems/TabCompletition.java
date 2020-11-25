@@ -1,5 +1,6 @@
 package ru.empireprojekt.empireitems;
 
+import com.google.gson.JsonArray;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
