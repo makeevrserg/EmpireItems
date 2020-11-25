@@ -44,11 +44,9 @@ public class EmpireItems extends JavaPlugin {
     GenericListener genericListener;
     ItemManager itemManager;
     public List<MenuItems> menuItems;
-
     public HashMap<String, List<Drop>> mobDrops;
     public HashMap<String, List<Drop>> blockDrops;
     private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<Player, PlayerMenuUtility>();
-
     public static PlayerMenuUtility getPlayerMenuUtility(Player p) {
         PlayerMenuUtility playerMenuUtility;
         if (playerMenuUtilityMap.containsKey(p))
@@ -62,13 +60,12 @@ public class EmpireItems extends JavaPlugin {
 
 
     private final Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
-
     public void HEXPattern(List<String> list) {
         for (int i = 0; i < list.size(); ++i)
             list.set(i, HEXPattern(list.get(i)));
 
     }
-
+    //Создает цветное сообщение по паттерну #FFFFFF или &2
     public String HEXPattern(String line) {
         Matcher match = pattern.matcher(line);
         while (match.find()) {
@@ -106,10 +103,16 @@ public class EmpireItems extends JavaPlugin {
 
     }
 
+
+    //Функция для перезапуска, не надо трогать
     private void EnableFunc() {
         itemManager = new ItemManager(this);
         item_events = new HashMap<ItemMeta, List<InteractEvent>>();
         items = new HashMap<String, ItemStack>();
+        itemRecipe = new HashMap<ItemStack, ShapedRecipe>();
+        this.generic_item = new GenericItemManager(this);
+        mobDrops = new HashMap<String, List<Drop>>();
+        blockDrops = new HashMap<String, List<Drop>>();
         LoadGenericItems();
         genericListener = new GenericListener(this, item_events);
         getServer().getPluginManager().registerEvents(genericListener, this);
@@ -120,6 +123,8 @@ public class EmpireItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
     }
 
+
+    //Создание дропа предметов drops.yml <String=Name of Entity,Drop=drop>
     private void getDrop(HashMap<String, List<Drop>> map, ConfigurationSection section) {
         for (String key_ : section.getKeys(false)) {
             ConfigurationSection sect = section.getConfigurationSection(key_);
@@ -137,18 +142,15 @@ public class EmpireItems extends JavaPlugin {
         }
     }
 
-
+    //Загрузка предметов из файлов
     private void LoadGenericItems() {
-        itemRecipe = new HashMap<ItemStack, ShapedRecipe>();
-        this.generic_item = new GenericItemManager(this);
+        //Получаем списко всех .yml файлов
         List<FileConfiguration> file_generic_items = generic_item.getConfig();
         for (FileConfiguration file_generic_item : file_generic_items) {
             boolean DEBUG_ITEM = false;
+            //если это файл с предметами, он должен быть под поле yml_items
             ConfigurationSection yml_items = file_generic_item.getConfigurationSection("yml_items");
-            //Listing yml_items under yml_items
-
-            mobDrops = new HashMap<String, List<Drop>>();
-            blockDrops = new HashMap<String, List<Drop>>();
+            //Лут с мобов находится под полем loot
             if (file_generic_item.getConfigurationSection("loot") != null) {
                 ConfigurationSection loot = file_generic_item.getConfigurationSection("loot");
                 if (loot.getConfigurationSection("mobs") != null) {
@@ -157,21 +159,20 @@ public class EmpireItems extends JavaPlugin {
 
                 }
                 if (loot.getConfigurationSection("blocks") != null) {
-
                     ConfigurationSection blocks = loot.getConfigurationSection("blocks");
                     getDrop(blockDrops, blocks);
                 }
-
-
             }
             if (yml_items == null) {
                 System.out.println(ChatColor.RED + "В файле" + file_generic_item.getName() + " отсутствует поле yml_items.");
                 continue;
             }
+            //Получаем все пля предметов из yml файла
             for (String key : yml_items.getKeys(false)) {
                 //System.out.println("Предмет: " + key);
                 ConfigurationSection generic_item = yml_items.getConfigurationSection(key);
                 GenericItem genericItem = new GenericItem();
+                //Проверяем на наличие необходимых значений
                 if (!generic_item.contains("display_name")
                         || !generic_item.contains("permission")
                         || !generic_item.contains("enabled")
@@ -194,8 +195,6 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.itemFlags = new ArrayList<String>();
                 genericItem.itemFlags = generic_item.getStringList("item_flags");
                 genericItem.durability = generic_item.getInt("durability", -1);
-                genericItem.song_name = generic_item.getString("music_disc.song.name", "");
-                genericItem.song_description = generic_item.getString("music_disc.song.description", "");
                 DEBUG_ITEM = generic_item.getBoolean("debug", false);
 
                 if (generic_item.contains("texture_path") && generic_item.contains("model_path")) {
@@ -205,6 +204,7 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.texture_path = generic_item.getString("texture_path");
                 genericItem.model_path = generic_item.getString("model_path");
 
+                //Чекаем, если предмет содержит крафт
                 if (generic_item.contains("ingredients") && generic_item.contains("pattern")) {
                     genericItem.ingredients = new HashMap<Character, String>();
                     genericItem.pattern = generic_item.getList("pattern");
@@ -244,6 +244,7 @@ public class EmpireItems extends JavaPlugin {
                 if (generic_item.contains("interact")) {
                     genericItem.events = new ArrayList<InteractEvent>();
                     for (String event_key : generic_item.getConfigurationSection("interact").getKeys(false)) {
+                        //Чекаем на поддерживаемый эвент
                         if (event_key.equals("RIGHT_CLICK")
                                 || event_key.equals("LEFT_CLICK")
                                 || event_key.equalsIgnoreCase("drink")
@@ -262,13 +263,13 @@ public class EmpireItems extends JavaPlugin {
                             interactEvent.increment_durability = event.getInt("increment_durability", 0);
                             interactEvent.decrement_durability = event.getInt("decrement_durability", 0);
                             interactEvent.execute_commands = event.getStringList("execute_commands");
-
+                            //Проверяем на наличие удаляемых эффектов
                             for (String effects : event.getStringList("remove_potion_effect"))
                                 if (PotionEffectType.getByName(effects) != null)
                                     interactEvent.remove_potion_effect.add(PotionEffectType.getByName(effects));
                                 else
                                     System.out.println(ChatColor.YELLOW + "Неподдерживаемый удаляемый эффект: " + effects);
-
+                            //Проверяем на наличие эффектов
                             if (event.contains("potion_effect")) {
                                 interactEvent.potion_effects = new ArrayList<PotionEffect>();
                                 for (String potion_key : event.getConfigurationSection("potion_effect").getKeys(false)) {
@@ -312,6 +313,7 @@ public class EmpireItems extends JavaPlugin {
         return true;
     }
 
+
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
         if (label.equalsIgnoreCase("ereload"))
@@ -353,12 +355,10 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
+    //Создание предмета из распарсенных значнеий
     private ItemStack CreateItem(GenericItem genericItem, String key) {
         ItemStack item = new ItemStack(Material.getMaterial(genericItem.material));
-
-
         ItemMeta meta = item.getItemMeta();
-
         for (String flag : genericItem.itemFlags)
             if (ItemFlag.valueOf(flag) != null)
                 meta.addItemFlags(ItemFlag.valueOf(flag));
@@ -406,10 +406,7 @@ public class EmpireItems extends JavaPlugin {
         meta.getPersistentDataContainer().set(empireID, PersistentDataType.STRING, genericItem.itemId);
 
 
-        if (genericItem.song_name.length() > 0) {
-            NamespacedKey songNameNamespace = new NamespacedKey(this, "song_name");
-            meta.getPersistentDataContainer().set(songNameNamespace, PersistentDataType.STRING, genericItem.song_name);
-        }
+
         item.setItemMeta(meta);
         if (genericItem.material.equalsIgnoreCase("potion")) {
             NBTItem nbtItem = new NBTItem(item);

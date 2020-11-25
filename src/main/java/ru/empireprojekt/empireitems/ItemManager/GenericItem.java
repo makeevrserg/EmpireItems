@@ -31,8 +31,6 @@ public class GenericItem {
     public int durability;
 
 
-    public String song_name;
-    public String song_description;
 
     public void PrintItem() {
         System.out.println(ChatColor.GREEN + "---------------------------Loaded item:---------------------------");
