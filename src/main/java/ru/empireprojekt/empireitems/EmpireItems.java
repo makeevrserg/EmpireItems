@@ -61,22 +61,23 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
-
     private final Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
-    public void HEXPattern(List<String> list){
-        for(int i =0;i<list.size();++i)
-            list.set(i,HEXPattern(list.get(i)));
+
+    public void HEXPattern(List<String> list) {
+        for (int i = 0; i < list.size(); ++i)
+            list.set(i, HEXPattern(list.get(i)));
 
     }
-    public String HEXPattern(String line){
+
+    public String HEXPattern(String line) {
         Matcher match = pattern.matcher(line);
-        while (match.find()){
-            String color = line.substring(match.start(),match.end());
-            line = line.replace(color, net.md_5.bungee.api.ChatColor.of(color)+"");
+        while (match.find()) {
+            String color = line.substring(match.start(), match.end());
+            line = line.replace(color, net.md_5.bungee.api.ChatColor.of(color) + "");
             match = pattern.matcher(line);
         }
 
-        return ChatColor.translateAlternateColorCodes('&',line);
+        return ChatColor.translateAlternateColorCodes('&', line);
     }
 
 
@@ -104,7 +105,8 @@ public class EmpireItems extends JavaPlugin {
         System.out.println("-----------------------------------------------------------");
 
     }
-    private void EnableFunc(){
+
+    private void EnableFunc() {
         itemManager = new ItemManager(this);
         item_events = new HashMap<ItemMeta, List<InteractEvent>>();
         items = new HashMap<String, ItemStack>();
@@ -118,7 +120,7 @@ public class EmpireItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
     }
 
-    private void getDrop(HashMap<String, List<Drop>> map,ConfigurationSection section) {
+    private void getDrop(HashMap<String, List<Drop>> map, ConfigurationSection section) {
         for (String key_ : section.getKeys(false)) {
             ConfigurationSection sect = section.getConfigurationSection(key_);
             List<Drop> mDrops = new ArrayList<Drop>();
@@ -136,8 +138,6 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
-
-
     private void LoadGenericItems() {
         itemRecipe = new HashMap<ItemStack, ShapedRecipe>();
         this.generic_item = new GenericItemManager(this);
@@ -153,13 +153,13 @@ public class EmpireItems extends JavaPlugin {
                 ConfigurationSection loot = file_generic_item.getConfigurationSection("loot");
                 if (loot.getConfigurationSection("mobs") != null) {
                     ConfigurationSection mobs = loot.getConfigurationSection("mobs");
-                    getDrop(mobDrops,mobs);
+                    getDrop(mobDrops, mobs);
 
                 }
-                if (loot.getConfigurationSection("blocks") != null){
+                if (loot.getConfigurationSection("blocks") != null) {
 
                     ConfigurationSection blocks = loot.getConfigurationSection("blocks");
-                    getDrop(blockDrops,blocks);
+                    getDrop(blockDrops, blocks);
                 }
 
 
@@ -183,6 +183,7 @@ public class EmpireItems extends JavaPlugin {
                     System.out.println(ChatColor.RED + "display_name permission enabled  material custom_model_data (texture_path or model_path)");
                     continue;
                 }
+                genericItem.itemId = key;
                 genericItem.display_name = HEXPattern(generic_item.getString("display_name"));
                 genericItem.lore = generic_item.getStringList("lore");
                 HEXPattern(genericItem.lore);
@@ -193,6 +194,8 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.itemFlags = new ArrayList<String>();
                 genericItem.itemFlags = generic_item.getStringList("item_flags");
                 genericItem.durability = generic_item.getInt("durability", -1);
+                genericItem.song_name = generic_item.getString("music_disc.song.name", "");
+                genericItem.song_description = generic_item.getString("music_disc.song.description", "");
                 DEBUG_ITEM = generic_item.getBoolean("debug", false);
 
                 if (generic_item.contains("texture_path") && generic_item.contains("model_path")) {
@@ -356,8 +359,8 @@ public class EmpireItems extends JavaPlugin {
 
         ItemMeta meta = item.getItemMeta();
 
-        for (String flag:genericItem.itemFlags)
-            if (ItemFlag.valueOf(flag)!=null)
+        for (String flag : genericItem.itemFlags)
+            if (ItemFlag.valueOf(flag) != null)
                 meta.addItemFlags(ItemFlag.valueOf(flag));
         for (mAttribute attr : genericItem.attributes) {
             try {
@@ -392,9 +395,21 @@ public class EmpireItems extends JavaPlugin {
             item_events.put(meta, genericItem.events);
         }
 
-        NamespacedKey durabilityMechanicNamespace = new NamespacedKey(this,"durability");
-        meta.getPersistentDataContainer().set(durabilityMechanicNamespace, PersistentDataType.INTEGER,10);
+        if (genericItem.durability > 0) {
+            NamespacedKey durabilityMechanicNamespace = new NamespacedKey(this, "durability");
+            meta.getPersistentDataContainer().set(durabilityMechanicNamespace, PersistentDataType.INTEGER, genericItem.durability);
 
+            NamespacedKey maxCustomDurability = new NamespacedKey(this, "maxCustomDurability");
+            meta.getPersistentDataContainer().set(maxCustomDurability, PersistentDataType.INTEGER, genericItem.durability);
+        }
+        NamespacedKey empireID = new NamespacedKey(this, "id");
+        meta.getPersistentDataContainer().set(empireID, PersistentDataType.STRING, genericItem.itemId);
+
+
+        if (genericItem.song_name.length() > 0) {
+            NamespacedKey songNameNamespace = new NamespacedKey(this, "song_name");
+            meta.getPersistentDataContainer().set(songNameNamespace, PersistentDataType.STRING, genericItem.song_name);
+        }
         item.setItemMeta(meta);
         if (genericItem.material.equalsIgnoreCase("potion")) {
             NBTItem nbtItem = new NBTItem(item);
@@ -403,13 +418,6 @@ public class EmpireItems extends JavaPlugin {
             item = nbtItem.getItem();
         }
 
-//        if (genericItem.durability!=-1) {
-//            System.out.println(genericItem.display_name+" ="+genericItem.durability);
-//            NBTItem nbtItem = new NBTItem(item);
-//            nbtItem.setInteger("Damage", genericItem.durability);
-//            nbtItem.applyNBT(item);
-//            item = nbtItem.getItem();
-//        }
         items.put(key, item);
         if (genericItem.pattern != null) {
 

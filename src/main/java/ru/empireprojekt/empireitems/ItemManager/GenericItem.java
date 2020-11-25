@@ -11,6 +11,7 @@ import ru.empireprojekt.empireitems.events.InteractEvent;
 import java.util.*;
 
 public class GenericItem {
+    public String itemId;
     public String display_name;
     public List<String> lore;
     public String permission;
@@ -29,6 +30,9 @@ public class GenericItem {
     public int customModelData;
     public int durability;
 
+
+    public String song_name;
+    public String song_description;
 
     public void PrintItem() {
         System.out.println(ChatColor.GREEN + "---------------------------Loaded item:---------------------------");

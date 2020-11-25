@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
@@ -23,7 +24,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import ru.empireprojekt.empireitems.EmpireItems;
 
+import javax.swing.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,12 +37,17 @@ public class GenericListener implements Listener {
     public GenericListener(EmpireItems plugin, Map<ItemMeta, List<InteractEvent>> item_events) {
         this.plugin = plugin;
         this.item_events = item_events;
+        played_music = new HashMap<Location, String>();
     }
 
     public void ReloadListener(Map<ItemMeta, List<InteractEvent>> item_events) {
         this.item_events = item_events;
+        played_music = new HashMap<Location, String>();
         System.out.println(ChatColor.GREEN + "Listener reloaded!");
     }
+
+
+    HashMap<Location, String> played_music;
 
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
@@ -87,27 +95,41 @@ public class GenericListener implements Listener {
         ItemStack item = e.getItem();
         ItemMeta meta = item.getItemMeta();
         NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
-        if (meta.getPersistentDataContainer() != null && meta.getPersistentDataContainer().has(durabilityMechanicNamespace, PersistentDataType.INTEGER)) {
+        NamespacedKey maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
+
+        if (meta != null && meta.getPersistentDataContainer().has(durabilityMechanicNamespace, PersistentDataType.INTEGER)) {
             int dura = meta.getPersistentDataContainer().get(durabilityMechanicNamespace, PersistentDataType.INTEGER);
             dura -= e.getDamage();
+
             if (dura <= 0)
                 item.setAmount(0);
             else {
                 meta.getPersistentDataContainer().set(durabilityMechanicNamespace, PersistentDataType.INTEGER, dura);
+                if (meta.getLore() == null || meta.getLore().size() == 0) {
+                    List<String> list = new ArrayList<String>();
+                    list.add("&7Прочность: " + dura);
+                    plugin.HEXPattern(list);
+                    meta.setLore(list);
+                } else {
+                    List<String> lore = meta.getLore();
+                    for (int i = 0; i < lore.size(); ++i) {
+                        if (lore.get(i).contains("Прочность"))
+                            lore.set(i, plugin.HEXPattern("&7Прочность: " + dura));
+                    }
+                    meta.setLore(lore);
+                }
 
-                List<String> list = new ArrayList<String>();
-                list.add("&7Прочность: " + dura);
-                plugin.HEXPattern(list);
-                meta.setLore(list);
 
-            }
-            item.setItemMeta(meta);
-
+                item.setItemMeta(meta);
                 NBTItem nbtItem = new NBTItem(item);
-                int d = item.getType().getMaxDurability() - (int) (item.getType().getMaxDurability() / (10.0 / dura));
+                int d = item.getType().getMaxDurability() - (int) (item.getType().getMaxDurability() / (
+                        meta.getPersistentDataContainer().get(maxCustomDurability, PersistentDataType.INTEGER)
+                                / (double) dura));
                 nbtItem.setInteger("Damage", d);
                 nbtItem.applyNBT(item);
                 item = nbtItem.getItem();
+            }
+
 
         }
 
