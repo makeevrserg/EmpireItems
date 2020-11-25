@@ -22,11 +22,9 @@ public class InteractEvent {
     public int sound_pitch = 1;
     public boolean as_console=false;
     public List<String> execute_commands;
-    public int increment_durability;
-    public int decrement_durability;
     public Collection<PotionEffect> potion_effects;
     public List<PotionEffectType> remove_potion_effect;
-
+    public int explosionPower = -1;
     public InteractEvent() {
         execute_commands = new ArrayList<String>();
         potion_effects = new ArrayList<PotionEffect>();
@@ -51,8 +49,6 @@ public class InteractEvent {
                 "\nsound_pitch " +sound_pitch+
                 "\nas_console " + as_console +
                 "\nexecute_commands " + Arrays.toString(execute_commands.toArray()) +
-                "\nincrement_durability " +increment_durability+
-                "\ndecrement_durability " +decrement_durability+
                 "\npotion_effects " + Arrays.toString(potion_effects.toArray()) +
                 "\nremove_potion_effect " + Arrays.toString(remove_potion_effect.toArray())
 

@@ -1,15 +1,12 @@
 package ru.empireprojekt.empireitems.ItemManager;
 
 import com.google.gson.*;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.Server;
-import org.bukkit.entity.Item;
-import org.json.simple.JSONObject;
 import ru.empireprojekt.empireitems.EmpireItems;
-
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
