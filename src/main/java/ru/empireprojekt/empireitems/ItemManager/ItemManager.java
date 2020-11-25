@@ -1,13 +1,14 @@
 package ru.empireprojekt.empireitems.ItemManager;
 
 import com.google.gson.*;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.Server;
-import org.bukkit.entity.Item;
-import org.json.simple.JSONObject;
 import ru.empireprojekt.empireitems.EmpireItems;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -48,8 +49,12 @@ public class ItemManager {
         items = new ArrayList<mItem>();
     }
 
-    public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data) {
+    /*public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data) {
         items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data));
+    }*/
+
+    public void AddItem(String namespace, GenericItem item, String key) {
+        items.add(new mItem(namespace, item.texture_path, item.model_path, key, item.material, item.customModelData));
     }
 
 

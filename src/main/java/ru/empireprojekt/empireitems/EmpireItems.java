@@ -214,7 +214,10 @@ public class EmpireItems extends JavaPlugin {
                 }
 
                 //Добавляем предмет в json файла ресурс-пака
-                itemManager.AddItem(file_generic_item.getString("namespace", "empire_items"), genericItem.texture_path, genericItem.model_path, key, genericItem.material, genericItem.customModelData);
+                itemManager.AddItem(file_generic_item.getString("namespace", "empire_items"), genericItem, key);
+
+                //itemManager.AddItem(file_generic_item.getString("namespace", "empire_items"),
+                // genericItem.texture_path, genericItem.model_path, key, genericItem.material, genericItem.customModelData);
 
                 //Зачарования
                 if (generic_item.contains("enchantements")) {
