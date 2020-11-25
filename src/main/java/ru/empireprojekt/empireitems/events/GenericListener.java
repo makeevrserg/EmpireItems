@@ -4,15 +4,13 @@ import de.tr7zw.nbtapi.NBTItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Damageable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -198,6 +196,14 @@ public class GenericListener implements Listener {
                 if (ev.click.equalsIgnoreCase("eat"))
                     HandleEvent(ev, player);
             }
+        }
+    }
+
+    @EventHandler
+    public void onProjectileHitEvent(ProjectileHitEvent event) {
+        Entity proj = event.getEntity();
+        if (proj instanceof Snowball) {
+            proj.getWorld().createExplosion(proj.getLocation(), 1.0f, false, false);
         }
     }
 }
