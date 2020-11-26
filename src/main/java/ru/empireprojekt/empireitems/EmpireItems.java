@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,6 +35,7 @@ import ru.empireprojekt.empireitems.events.InteractEvent;
 import ru.empireprojekt.empireitems.files.GenericItemManager;
 
 import javax.swing.*;
+import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,10 +70,10 @@ public class EmpireItems extends JavaPlugin {
 
     private final Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
 
-    public void HEXPattern(List<String> list) {
+    public List<String> HEXPattern(List<String> list) {
         for (int i = 0; i < list.size(); ++i)
             list.set(i, HEXPattern(list.get(i)));
-
+        return list;
     }
 
     //Создает цветное сообщение по паттерну #FFFFFF или &2
@@ -344,7 +346,8 @@ public class EmpireItems extends JavaPlugin {
         }
         sender.sendMessage(ChatColor.GREEN + "Перезагружаем EmpireItems");
 
-        Bukkit.clearRecipes();
+
+        //Bukkit.clearRecipes();
         generic_item.reloadConfig();
         EnableFunc();
         sender.sendMessage(ChatColor.GREEN + "Плагин успешно перезагружен!");
@@ -359,13 +362,34 @@ public class EmpireItems extends JavaPlugin {
         if (label.equalsIgnoreCase("ezip")) {
             //itemManager.print();
             itemManager.GenerateMinecraftModels();
-            System.out.println(getDataFolder() + "\\pack\\assets");
+            System.out.println(getDataFolder() + File.separator+"pack"+File.separator+"assets");
         }
         if (label.equalsIgnoreCase("emgui")) {
             new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
         }
-        if (label.equalsIgnoreCase("emojis")) {
-            new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
+        if (sender instanceof Player && label.equalsIgnoreCase("emojis")) {
+            ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+            BookMeta meta = (BookMeta) book.getItemMeta();
+            meta.setTitle(HEXPattern("&fЭмодзи"));
+            meta.setAuthor("RomaRoman");
+            String list = "";
+            List<String> pages = new ArrayList<String>();
+            int count = 0;
+            for (String emoji : emojis.keySet()) {
+                count++;
+                list += emoji + "  =  " + "&f" + emojis.get(emoji) + "&r" + "\n";
+                if (count % 14 == 0) {
+                    pages.add(list);
+                    list = "";
+                }
+            }
+            pages.add(list);
+            meta.setPages(HEXPattern(pages));
+
+            book.setItemMeta(meta);
+            ((Player) sender).getInventory().addItem(book);
+
+
         }
         if (label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp")) {
             if (args.length > 0) {

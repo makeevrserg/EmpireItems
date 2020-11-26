@@ -1,6 +1,8 @@
 package ru.empireprojekt.empireitems.events;
 
+import com.google.gson.internal.$Gson$Preconditions;
 import de.tr7zw.nbtapi.NBTItem;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -23,6 +25,13 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import ru.empireprojekt.empireitems.EmpireItems;
+import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.api.ListenerPriority;
+import github.scarsz.discordsrv.api.Subscribe;
+import github.scarsz.discordsrv.api.events.*;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.User;
+import github.scarsz.discordsrv.util.DiscordUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +46,7 @@ public class GenericListener implements Listener {
     public GenericListener(EmpireItems plugin, Map<String, List<InteractEvent>> item_events) {
         this.plugin = plugin;
         this.item_events = item_events;
+        DiscordSRV.api.subscribe(this);
     }
 
     public void UnregisterListener() {
@@ -65,19 +75,48 @@ public class GenericListener implements Listener {
 
 
     private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]{3}|[a-zA-Z0-9_]{4}|[a-zA-Z0-9_]{5}|[a-zA-Z0-9_]{6}|[a-zA-Z0-9_]{7}|[a-zA-Z0-9_]{8}|[a-zA-Z0-9_]{9}|[a-zA-Z0-9_]{10} ):");
-    @EventHandler
-    public void onChat(AsyncPlayerChatEvent event){
-        String msg = event.getMessage();
-        Matcher matcher = emojiPattern.matcher(msg);
-        while (matcher.find()){
-            String emoji = msg.substring(matcher.start(),matcher.end());
-            System.out.println(emoji);
-            msg = msg.replace(emoji,plugin.emojis.get(emoji)+"");
-            matcher = emojiPattern.matcher(msg);
-        }
-        event.setMessage(msg);
 
+    List<String> messages = new ArrayList<String>();
+
+    @EventHandler
+    public void onChat(AsyncPlayerChatEvent event) {
+        String msg = event.getMessage();
+        String newMessage = "" + msg + " ";
+        messages.add(newMessage);
+        event.setMessage(GetEmoji(msg, emojiPattern));
     }
+
+    private String GetEmoji(String msg, Pattern pattern) {
+        Matcher matcher = pattern.matcher(msg);
+        while (matcher.find()) {
+            String emoji = msg.substring(matcher.start(), matcher.end());
+            msg = msg.replace(emoji, plugin.emojis.get(emoji) + "");
+            matcher = pattern.matcher(msg);
+        }
+        return msg;
+    }
+
+    @Subscribe(priority = ListenerPriority.MONITOR)
+    public void onChatMessageFromDiscord(DiscordGuildMessagePostProcessEvent event) { // From Discord to in-game
+        // TODO: Add permission checking for Discord
+        String message = event.getProcessedMessage();
+
+        event.setProcessedMessage(GetEmoji(message, emojiPattern));
+    }
+
+    @Subscribe(priority = ListenerPriority.HIGHEST)
+    public void onChatMessageFromInGame(GameChatMessagePreProcessEvent event) { // From in-game to Discord
+        String message = event.getMessage();
+
+        int count = messages.size();
+        for (int i = 0; i < count; i++) {
+            event.setMessage(messages.get(0).toString());
+            messages.remove(0);
+        }
+
+        //event.setMessage(message);
+    }
+
 //    @EventHandler
 //    public void onInventoryClosedEvent(InventoryCloseEvent e) {
 //        if (openedChests.contains(e.getPlayer().getUniqueId().toString()))
@@ -106,13 +145,15 @@ public class GenericListener implements Listener {
         if (e.getDamager() instanceof Player) {
             Player player = (Player) e.getDamager();
             ItemMeta meta = player.getInventory().getItemInMainHand().getItemMeta();
-            NamespacedKey empireID = new NamespacedKey(plugin, "id");
-            String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
-            List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
-            if (events != null)
-                for (InteractEvent ev : events)
-                    if (ev.click.equalsIgnoreCase("entity_damage"))
-                        HandleEvent(ev, player);
+            if (meta != null) {
+                NamespacedKey empireID = new NamespacedKey(plugin, "id");
+                String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
+                List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
+                if (events != null)
+                    for (InteractEvent ev : events)
+                        if (ev.click.equalsIgnoreCase("entity_damage"))
+                            HandleEvent(ev, player);
+            }
 
         }
     }

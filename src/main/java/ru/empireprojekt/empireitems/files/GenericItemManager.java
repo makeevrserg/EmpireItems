@@ -62,9 +62,9 @@ public class GenericItemManager {
         if (this.plugin.getDataFolder().listFiles() != null)
             for (final File fileEntry : this.plugin.getDataFolder().listFiles())
                 if ((Files.getFileExtension(String.valueOf(fileEntry))).equalsIgnoreCase("yml")) {
-                    System.out.println(ChatColor.GREEN + "Загрузка файла: " + this.plugin.getDataFolder() + "\\" + fileEntry.getName());
+                    System.out.println(ChatColor.GREEN + "Загрузка файла: " + this.plugin.getDataFolder() +File.separator + fileEntry.getName());
                     itemFilesList.add(
-                            new File(this.plugin.getDataFolder() + "\\" + fileEntry.getName())
+                            new File(this.plugin.getDataFolder() + File.separator + fileEntry.getName())
                     );
                 }
     }

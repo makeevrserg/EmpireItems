@@ -4,10 +4,7 @@ import com.google.gson.*;
 import org.bukkit.ChatColor;
 import ru.empireprojekt.empireitems.EmpireItems;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -105,7 +102,7 @@ public class ItemManager {
         itemObj.add("textures", layer);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        FileWriter file = new FileWriter(plugin.getDataFolder() + "\\pack\\assets\\" + namespace + "\\models\\auto_generated\\" + modelName + ".json");
+        FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator + namespace + File.separator+"models"+File.separator+"auto_generated"+File.separator + modelName + ".json");
         file.write(gson.toJson(itemObj));
         file.close();
 
@@ -117,7 +114,7 @@ public class ItemManager {
         //Чистим файыл
         for (mItem item : items) {
             try {
-                FileReader reader = new FileReader(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
+                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
                 JsonObject jsonFile = (JsonObject) jsonParser.parse(reader);
                 JsonArray overrides = new JsonArray();
 
@@ -138,7 +135,7 @@ public class ItemManager {
                 }
 
 
-                FileWriter file = new FileWriter(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
+                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
 
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 file.write(gson.toJson(jsonFile));
@@ -156,7 +153,7 @@ public class ItemManager {
                 //Generating minecraft models
                 //System.out.println(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
                 //Открыли существующий файл
-                FileReader reader = new FileReader(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
+                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
                 JsonObject jsonFile = (JsonObject) jsonParser.parse(reader);
                 reader.close();
                 if (item.material.toLowerCase().equals("bow")) {
@@ -210,7 +207,7 @@ public class ItemManager {
                         auto_generate(jsonFile.get("parent").toString().replaceAll("\"", ""), item.namespace, item.texture_path, item.item_name);
                 }
 
-                FileWriter file = new FileWriter(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
+                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 file.write(gson.toJson(jsonFile));
                 file.close();

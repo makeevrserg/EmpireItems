@@ -8,7 +8,7 @@ commands:
   emp:
   emgui:
   ezip:
-  nameplate:
+  emojis:
   empireitems:
     usage: |
       /ereload - Перезагружает плагин
