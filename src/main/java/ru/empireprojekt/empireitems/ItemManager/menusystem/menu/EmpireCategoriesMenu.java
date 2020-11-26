@@ -35,7 +35,7 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
                 new EmpireCategoryMenu(playerMenuUtility, plugin, e.getSlot()).open();
             if (e.getSlot() == 45) {
                 if (page == 0) {
-                    playerMenuUtility.getOwner().sendMessage(ChatColor.YELLOW + "Вы на первой странице");
+                    playerMenuUtility.getPlayer().sendMessage(ChatColor.YELLOW + "Вы на первой странице");
                     return;
                 }
                 page -= 1;
@@ -45,7 +45,7 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
                 e.getWhoClicked().closeInventory();
             else if (e.getSlot() == 53) {
                 if (page >= maxPages) {
-                    playerMenuUtility.getOwner().sendMessage(ChatColor.YELLOW + "Вы на последней странице");
+                    playerMenuUtility.getPlayer().sendMessage(ChatColor.YELLOW + "Вы на последней странице");
                     return;
                 }
                 page += 1;

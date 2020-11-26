@@ -1,14 +1,10 @@
 package ru.empireprojekt.empireitems.ItemManager.menusystem.menu;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import ru.empireprojekt.empireitems.EmpireItems;
-import ru.empireprojekt.empireitems.ItemManager.menusystem.MenuItems;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PaginatedMenu;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
 
@@ -39,7 +35,7 @@ public class EmpireCategoryMenu extends PaginatedMenu {
                 new EmpireCategoriesMenu(playerMenuUtility, plugin).open();
             } else if (e.getSlot() == 53) {
                 if (this.page >= maxPage) {
-                    playerMenuUtility.getOwner().sendMessage(ChatColor.YELLOW + "Вы на последней странице");
+                    playerMenuUtility.getPlayer().sendMessage(ChatColor.YELLOW + "Вы на последней странице");
                     return;
                 }
                 inventory.clear();
@@ -47,7 +43,7 @@ public class EmpireCategoryMenu extends PaginatedMenu {
                 setMenuItems();
             } else if (e.getSlot() == 45) {
                 if (this.page == 0) {
-                    playerMenuUtility.getOwner().sendMessage(ChatColor.YELLOW + "Вы на первой странице");
+                    playerMenuUtility.getPlayer().sendMessage(ChatColor.YELLOW + "Вы на первой странице");
                     return;
                 }
                 this.page -= 1;

@@ -3,11 +3,13 @@ package ru.empireprojekt.empireitems.ItemManager;
 import com.google.gson.*;
 import org.bukkit.ChatColor;
 import ru.empireprojekt.empireitems.EmpireItems;
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class ItemManager {
@@ -48,6 +50,7 @@ public class ItemManager {
     public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data) {
         items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data));
     }
+
 
 
     private JsonObject GetBowObject(int pulling, String model, String namespace, int custom_model_data) {
@@ -98,7 +101,7 @@ public class ItemManager {
         JsonObject itemObj = new JsonObject();
         itemObj.addProperty("parent", parent);
         JsonObject layer = new JsonObject();
-        layer.addProperty("layer0", namespace + ":" + layerPath);
+        layer.addProperty("layer0", namespace + ":" + layerPath.replace(".png", ""));
         itemObj.add("textures", layer);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -151,7 +154,7 @@ public class ItemManager {
         for (mItem item : items) {
             try {
                 //Generating minecraft models
-                System.out.println(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
+                //System.out.println(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
                 //Открыли существующий файл
                 FileReader reader = new FileReader(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
                 JsonObject jsonFile = (JsonObject) jsonParser.parse(reader);
@@ -197,13 +200,14 @@ public class ItemManager {
                         overrides = jsonFile.getAsJsonArray("overrides");
                     else
                         overrides = new JsonArray();
-                    System.out.println(item.material + ";" + item.item_name);
+                    //System.out.println(item.material + ";" + item.item_name);
                     if (item.model_path != null)
                         overrides.add(GetGenericObject(item.namespace + ":" + item.model_path, item.custom_model_data));
                     else
                         overrides.add(GetGenericObject(item.namespace + ":auto_generated/" + item.item_name, item.custom_model_data));
                     jsonFile.add("overrides", overrides);
-                    auto_generate(jsonFile.get("parent").toString().replaceAll("\"", ""), item.namespace, item.texture_path, item.item_name);
+                    if (item.model_path == null || item.model_path.length() == 0)
+                        auto_generate(jsonFile.get("parent").toString().replaceAll("\"", ""), item.namespace, item.texture_path, item.item_name);
                 }
 
                 FileWriter file = new FileWriter(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");

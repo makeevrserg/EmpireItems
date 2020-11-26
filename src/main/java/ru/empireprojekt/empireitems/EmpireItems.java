@@ -13,6 +13,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -31,6 +33,7 @@ import ru.empireprojekt.empireitems.events.GenericListener;
 import ru.empireprojekt.empireitems.events.InteractEvent;
 import ru.empireprojekt.empireitems.files.GenericItemManager;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,14 +43,16 @@ public class EmpireItems extends JavaPlugin {
     public GenericItemManager generic_item;
     public Map<String, ItemStack> items;
     public HashMap<ItemStack, ShapedRecipe> itemRecipe;
-    public Map<ItemMeta, List<InteractEvent>> item_events;
+    public Map<String, List<InteractEvent>> item_events;
     TabCompletition tabCompletition;
     GenericListener genericListener;
     ItemManager itemManager;
     public List<MenuItems> menuItems;
     public HashMap<String, List<Drop>> mobDrops;
     public HashMap<String, List<Drop>> blockDrops;
+    HashMap<Integer, String> usedModelData;
     private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<Player, PlayerMenuUtility>();
+    MenuListener menuListener;
 
     public static PlayerMenuUtility getPlayerMenuUtility(Player p) {
         PlayerMenuUtility playerMenuUtility;
@@ -107,23 +112,44 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
+    public HashMap<String, String> emojis;
+
+    private void GenerateEmoji() {
+        emojis = new HashMap<String, String>();
+        if (generic_item.getGuiConfig().contains("emoji"))
+            for (String key : generic_item.getGuiConfig().getConfigurationSection("emoji").getKeys(false)) {
+                emojis.put(
+                        ":" + key + ":",
+                        generic_item.getGuiConfig().getString("emoji." + key)
+                );
+            }
+    }
+
     //Функция для перезапуска, не надо трогать
     private void EnableFunc() {
         itemManager = new ItemManager(this);
-        item_events = new HashMap<ItemMeta, List<InteractEvent>>();
+        item_events = new HashMap<String, List<InteractEvent>>();
+        usedModelData = new HashMap<Integer, String>();
         items = new HashMap<String, ItemStack>();
         itemRecipe = new HashMap<ItemStack, ShapedRecipe>();
         this.generic_item = new GenericItemManager(this);
         mobDrops = new HashMap<String, List<Drop>>();
         blockDrops = new HashMap<String, List<Drop>>();
         LoadGenericItems();
+        if (genericListener != null)
+            genericListener.UnregisterListener();
         genericListener = new GenericListener(this, item_events);
         getServer().getPluginManager().registerEvents(genericListener, this);
         tabCompletition = new TabCompletition(itemManager.GetNames());
         getCommand("emp").setTabCompleter(tabCompletition);
         getCommand("empireitems").setTabCompleter(tabCompletition);
+        GenerateEmoji();
         generateMenuItems();
-        getServer().getPluginManager().registerEvents(new MenuListener(), this);
+        if (menuListener != null)
+            InventoryClickEvent.getHandlerList().unregister(menuListener);
+        menuListener = new MenuListener();
+        getServer().getPluginManager().registerEvents(menuListener, this);
+
     }
 
 
@@ -202,7 +228,10 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.itemFlags = new ArrayList<String>();
                 genericItem.itemFlags = generic_item.getStringList("item_flags");
                 genericItem.durability = generic_item.getInt("durability", -1);
-
+                if (usedModelData.containsKey(genericItem.customModelData))
+                    System.out.println(ChatColor.YELLOW + " AlreadyUsed CustomModelData " + usedModelData.get(genericItem.customModelData) + "=" + genericItem.itemId);
+                else
+                    usedModelData.put(genericItem.customModelData, genericItem.itemId);
                 if (generic_item.contains("texture_path") && generic_item.contains("model_path"))
                     System.out.println(ChatColor.YELLOW + "Вы используете model_path и texture_path в " + key + ". Используйте что-то одно.");
                 genericItem.texture_path = generic_item.getString("texture_path");
@@ -246,11 +275,17 @@ public class EmpireItems extends JavaPlugin {
                     genericItem.events = new ArrayList<InteractEvent>();
                     for (String event_key : generic_item.getConfigurationSection("interact").getKeys(false)) {
                         //Чекаем на поддерживаемый эвент
-                        if (event_key.equals("RIGHT_CLICK")
-                                || event_key.equals("LEFT_CLICK")
-                                || event_key.equalsIgnoreCase("item_hit_ground")
-                                || event_key.equalsIgnoreCase("drink")
-                                || event_key.equalsIgnoreCase("eat")
+
+                        if (
+                                event_key.equalsIgnoreCase("LEFT_CLICK_AIR") ||
+                                        event_key.equalsIgnoreCase("RIGHT_CLICK_AIR") ||
+                                        event_key.equalsIgnoreCase("RIGHT_CLICK_BLOCK") ||
+                                        event_key.equalsIgnoreCase("LEFT_CLICK_BLOCK") ||
+                                        event_key.equalsIgnoreCase("PHYSICAL") ||
+                                        event_key.equalsIgnoreCase("item_hit_ground")
+                                        || event_key.equalsIgnoreCase("drink")
+                                        || event_key.equalsIgnoreCase("eat")
+                                        || event_key.equalsIgnoreCase("entity_damage")
                         ) {
                             ConfigurationSection event = generic_item.getConfigurationSection("interact").getConfigurationSection(event_key);
                             InteractEvent interactEvent = new InteractEvent();
@@ -290,7 +325,7 @@ public class EmpireItems extends JavaPlugin {
                             }
                             genericItem.events.add(interactEvent);
                         } else {
-                            System.out.println(ChatColor.YELLOW + "Введен неподдерживаемый эвент " + event_key);
+                            System.out.println(ChatColor.YELLOW + "Введен неподдерживаемый эвент " + event_key + " item=" + genericItem.itemId);
                         }
                     }
                 }
@@ -312,7 +347,6 @@ public class EmpireItems extends JavaPlugin {
         Bukkit.clearRecipes();
         generic_item.reloadConfig();
         EnableFunc();
-        genericListener.ReloadListener(item_events);
         sender.sendMessage(ChatColor.GREEN + "Плагин успешно перезагружен!");
         return true;
     }
@@ -323,11 +357,14 @@ public class EmpireItems extends JavaPlugin {
         if (label.equalsIgnoreCase("ereload"))
             return reload(sender);
         if (label.equalsIgnoreCase("ezip")) {
-            itemManager.print();
+            //itemManager.print();
             itemManager.GenerateMinecraftModels();
             System.out.println(getDataFolder() + "\\pack\\assets");
         }
         if (label.equalsIgnoreCase("emgui")) {
+            new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
+        }
+        if (label.equalsIgnoreCase("emojis")) {
             new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
         }
         if (label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp")) {
@@ -400,7 +437,6 @@ public class EmpireItems extends JavaPlugin {
                 }
 
             }
-            item_events.put(meta, genericItem.events);
         }
 
         if (genericItem.durability > 0) {
@@ -421,6 +457,10 @@ public class EmpireItems extends JavaPlugin {
             nbtItem.applyNBT(item);
             item = nbtItem.getItem();
         }
+
+
+        if (genericItem.events != null)
+            item_events.put(genericItem.itemId, genericItem.events);
 
         items.put(key, item);
         if (genericItem.pattern != null) {

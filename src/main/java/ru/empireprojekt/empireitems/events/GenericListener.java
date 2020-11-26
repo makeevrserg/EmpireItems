@@ -1,21 +1,22 @@
 package ru.empireprojekt.empireitems.events;
 
 import de.tr7zw.nbtapi.NBTItem;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -23,26 +24,29 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import ru.empireprojekt.empireitems.EmpireItems;
 
-import javax.swing.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GenericListener implements Listener {
-    Map<ItemMeta, List<InteractEvent>> item_events;
+    Map<String, List<InteractEvent>> item_events;
     EmpireItems plugin;
 
-    public GenericListener(EmpireItems plugin, Map<ItemMeta, List<InteractEvent>> item_events) {
+    public GenericListener(EmpireItems plugin, Map<String, List<InteractEvent>> item_events) {
         this.plugin = plugin;
         this.item_events = item_events;
     }
 
-    public void ReloadListener(Map<ItemMeta, List<InteractEvent>> item_events) {
-        this.item_events = item_events;
-        System.out.println(ChatColor.GREEN + "Listener reloaded!");
+    public void UnregisterListener() {
+        ProjectileHitEvent.getHandlerList().unregister(this);
+        PlayerInteractEvent.getHandlerList().unregister(this);
+        PlayerItemDamageEvent.getHandlerList().unregister(this);
+        BlockBreakEvent.getHandlerList().unregister(this);
+        EntityDeathEvent.getHandlerList().unregister(this);
+        PlayerItemConsumeEvent.getHandlerList().unregister(this);
     }
-
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent e) {
@@ -60,30 +64,84 @@ public class GenericListener implements Listener {
     }
 
 
+    private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]{3}|[a-zA-Z0-9_]{4}|[a-zA-Z0-9_]{5}|[a-zA-Z0-9_]{6}|[a-zA-Z0-9_]{7}|[a-zA-Z0-9_]{8}|[a-zA-Z0-9_]{9}|[a-zA-Z0-9_]{10} ):");
     @EventHandler
-    public void onRightClick(PlayerInteractEvent event) {
-        if (event.getAction() == Action.RIGHT_CLICK_AIR)
-            if (event.getItem() != null) {
-                ItemStack item = event.getItem();
-                List<InteractEvent> events = item_events.get(item.getItemMeta());//Получаем эвент конкретного предмета
-                if (events != null)
-                    for (InteractEvent ev : events)
-                        if (ev.click.equalsIgnoreCase("RIGHT_CLICK"))
-                            HandleEvent(ev, event.getPlayer());
+    public void onChat(AsyncPlayerChatEvent event){
+        String msg = event.getMessage();
+        Matcher matcher = emojiPattern.matcher(msg);
+        while (matcher.find()){
+            String emoji = msg.substring(matcher.start(),matcher.end());
+            System.out.println(emoji);
+            msg = msg.replace(emoji,plugin.emojis.get(emoji)+"");
+            matcher = emojiPattern.matcher(msg);
+        }
+        event.setMessage(msg);
+
+    }
+//    @EventHandler
+//    public void onInventoryClosedEvent(InventoryCloseEvent e) {
+//        if (openedChests.contains(e.getPlayer().getUniqueId().toString()))
+//            openedChests.remove(e.getPlayer().getUniqueId().toString());
+//    }
+//
+//    List<String> openedChests = new ArrayList<String>();
+//
+//    @EventHandler
+//    public void onInventoryOpenEvent(InventoryOpenEvent e) {
+//        if (e.getInventory().getType() == InventoryType.CHEST && !openedChests.contains(e.getPlayer().getUniqueId().toString())) {
+//            openedChests.add(e.getPlayer().getUniqueId().toString());
+//            e.setCancelled(true);
+//            System.out.println("Inventory");
+//            Inventory inv = e.getInventory();
+//            Inventory inventory = Bukkit.createInventory(null, inv.getSize(), "\ue11e");
+//            ItemStack items[] = inv.getContents();
+//            e.getPlayer().closeInventory();
+//            e.getPlayer().openInventory(inventory);
+//        }
+//    }
 
 
-            }
+    @EventHandler
+    public void onEntityDamage(EntityDamageByEntityEvent e) {
+        if (e.getDamager() instanceof Player) {
+            Player player = (Player) e.getDamager();
+            ItemMeta meta = player.getInventory().getItemInMainHand().getItemMeta();
+            NamespacedKey empireID = new NamespacedKey(plugin, "id");
+            String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
+            List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
+            if (events != null)
+                for (InteractEvent ev : events)
+                    if (ev.click.equalsIgnoreCase("entity_damage"))
+                        HandleEvent(ev, player);
+
+        }
+    }
+
+
+    @EventHandler
+    public void onClick(PlayerInteractEvent event) {
+        if (event.getItem() != null) {
+            ItemMeta meta = event.getItem().getItemMeta();
+            NamespacedKey empireID = new NamespacedKey(plugin, "id");
+            String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
+            List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
+            if (events != null)
+                for (InteractEvent ev : events)
+                    if (ev.click.equalsIgnoreCase(event.getAction().name()))
+                        HandleEvent(ev, event.getPlayer());
+
+
+        }
 
     }
 
 
     private void HandleEvent(InteractEvent ev, Player player) {
         if (ev.play_sound != null)
-            player.playSound(player.getLocation(),
-                    ev.play_sound, 1, 1
-            );
+            player.getWorld().playSound(player.getLocation(),
+                    ev.play_sound, 1, 1);
         if (ev.play_particle != null)
-            player.spawnParticle(Particle.valueOf(ev.play_particle),
+            player.getWorld().spawnParticle(Particle.valueOf(ev.play_particle),
                     player.getLocation().getX(), player.getLocation().getY() + 2, player.getLocation().getZ(),
                     ev.particle_count, 0, 0, 0, ev.particle_time);
         if (ev.execute_commands != null) {
@@ -108,6 +166,8 @@ public class GenericListener implements Listener {
         ItemMeta meta = item.getItemMeta();
         NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
         NamespacedKey maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
+
+
         if (meta == null)
             return;
         PersistentDataContainer container = meta.getPersistentDataContainer();
@@ -193,8 +253,11 @@ public class GenericListener implements Listener {
 
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent event) {
-        ItemStack item = event.getItem();
-        List<InteractEvent> events = item_events.get(item.getItemMeta());//Получаем эвент конкретного предмета
+        ItemMeta meta = event.getItem().getItemMeta();
+
+        NamespacedKey empireID = new NamespacedKey(plugin, "id");
+        String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
+        List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
         Player player = event.getPlayer();
         if (events != null)
             for (InteractEvent ev : events)

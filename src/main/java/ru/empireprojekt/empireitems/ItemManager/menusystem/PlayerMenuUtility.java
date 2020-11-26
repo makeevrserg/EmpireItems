@@ -3,17 +3,17 @@ package ru.empireprojekt.empireitems.ItemManager.menusystem;
 import org.bukkit.entity.Player;
 
 public class PlayerMenuUtility {
-    private Player owner;
+    private Player player;
 
-    public PlayerMenuUtility(Player owner) {
-        this.owner = owner;
+    public PlayerMenuUtility(Player player) {
+        this.player = player;
     }
 
-    public void setOwner(Player owner) {
-        this.owner = owner;
+    public void setPlayer(Player player) {
+        this.player = player;
     }
 
-    public Player getOwner() {
-        return owner;
+    public Player getPlayer() {
+        return player;
     }
 }
