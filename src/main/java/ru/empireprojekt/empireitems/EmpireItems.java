@@ -362,11 +362,35 @@ public class EmpireItems extends JavaPlugin {
         if (label.equalsIgnoreCase("ezip")) {
             //itemManager.print();
             itemManager.GenerateMinecraftModels();
-            System.out.println(getDataFolder() + File.separator+"pack"+File.separator+"assets");
+            System.out.println(getDataFolder() + File.separator + "pack" + File.separator + "assets");
         }
         if (label.equalsIgnoreCase("emgui")) {
             new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
         }
+        //emnbt delete NbtName
+        //emnbt set NbtName NbtValue
+        if (sender.hasPermission("empireitems.changenbt") && sender instanceof Player && label.equalsIgnoreCase("emnbt")) {
+            Player player = (Player) sender;
+            ItemStack item = player.getInventory().getItemInMainHand();
+            NBTItem nbtItem = new NBTItem(item);
+            if (args[0].equalsIgnoreCase("delete") && args[1] != null) {
+                nbtItem.removeKey(args[1]);
+            } else if (args[0].equalsIgnoreCase("set") && args[1] != null && args[2] != null && args[3] != null) {
+                if (args[1].equalsIgnoreCase("int"))
+                    try {
+                        nbtItem.setInteger(args[2], Integer.valueOf(args[3]));
+
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.YELLOW + "Неверное значение");
+                    }
+                else if (args[1].equalsIgnoreCase("string"))
+                    nbtItem.setString(args[2], args[3]);
+
+            }
+
+            nbtItem.applyNBT(item);
+        }
+
         if (sender instanceof Player && label.equalsIgnoreCase("emojis")) {
             ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
             BookMeta meta = (BookMeta) book.getItemMeta();
