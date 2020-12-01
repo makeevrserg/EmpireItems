@@ -3,13 +3,17 @@ name: EmpireItems
 version: 0.1
 author: RatushevRoman
 api-version: 1.13
+softdepend: [DiscordSRV]
+depend: [PlaceholderAPI]
 commands:
   ereload:
+  emsplash:
   emp:
   emgui:
   ezip:
   emojis:
   emnbt:
+  emrepair:
   empireitems:
     usage: |
       /ereload - Перезагружает плагин

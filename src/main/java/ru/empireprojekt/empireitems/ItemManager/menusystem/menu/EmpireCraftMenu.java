@@ -21,12 +21,14 @@ public class EmpireCraftMenu extends Menu {
     EmpireItems plugin;
     String item;
     int slot;
+    int page;
 
-    public EmpireCraftMenu(PlayerMenuUtility playerMenuUtility, int slot, EmpireItems plugin, String item) {
+    public EmpireCraftMenu(PlayerMenuUtility playerMenuUtility, int slot, int page, EmpireItems plugin, String item) {
         super(playerMenuUtility);
         this.slot = slot;
         this.plugin = plugin;
         this.item = item;
+        this.page = page;
     }
 
     public String getMenuName() {
@@ -40,7 +42,10 @@ public class EmpireCraftMenu extends Menu {
     public void handleMenu(InventoryClickEvent e) {
         if (e.getCurrentItem() != null) {
             if (e.getSlot() == 49) {
-                new EmpireCategoryMenu(playerMenuUtility, plugin, slot).open();
+                new EmpireCategoryMenu(playerMenuUtility, plugin, slot, page).open();
+            } else if (e.getSlot() == 43) {
+                if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("empireitems.get") && plugin.items.containsKey(item))
+                    playerMenuUtility.getPlayer().getInventory().addItem(plugin.items.get(item));
             }
         }
     }
@@ -96,19 +101,10 @@ public class EmpireCraftMenu extends Menu {
         List<String> dropLore = new ArrayList<String>();
 
         if (IsDropped(plugin.mobDrops))
-            for (String key : plugin.mobDrops.keySet()) {
-                dropLore.add(ChatColor.DARK_GRAY + key + ":\n");
-                for (Drop s : plugin.mobDrops.get(key))
-                    if (item.equals(s.item))
-                        dropLore.add(ChatColor.DARK_GRAY + "От " + s.min_amount + " до " + s.max_amount + " с вер." + " " + s.chance + "%\n");
-            }
+            dropLore = getDrops(dropLore, plugin.mobDrops);
         if (IsDropped(plugin.blockDrops))
-            for (String key : plugin.blockDrops.keySet()) {
-                dropLore.add(ChatColor.DARK_GRAY + key + ":\n");
-                for (Drop s : plugin.blockDrops.get(key))
-                    if (item.equals(s.item))
-                        dropLore.add(ChatColor.DARK_GRAY + "От " + s.min_amount + " до " + s.max_amount + " с вер." + " " + s.chance + "%\n");
-            }
+            dropLore = getDrops(dropLore, plugin.blockDrops);
+
         if (dropLore.size() != 0) {
 
             dropMeta.setDisplayName(ChatColor.WHITE + "Выпадает из:");
@@ -117,6 +113,37 @@ public class EmpireCraftMenu extends Menu {
 
             inventory.setItem(46, drop);
         }
+        if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("getItem")) {
+            ItemStack getItem;
+            if (plugin.items.containsKey(
+                    plugin.generic_item.getGuiConfig().getString("settings.give_btn")
+            ))
+                getItem = plugin.items.get(plugin.generic_item.getGuiConfig().getString("settings.give_btn"));
+            else
+                getItem = new ItemStack(Material.STONE);
+            inventory.setItem(43, getItem);
+        }
+    }
+
+    private List<String> getDrops(List<String> dropLore, HashMap<String, List<Drop>> standartDrops) {
+        HashMap<String, List<Drop>> mDrops = new HashMap<>();
+
+        for (String key : standartDrops.keySet()) {
+            List<Drop> drops = new ArrayList<>();
+            for (Drop s : standartDrops.get(key))
+                if (item.equals(s.item)) {
+                    drops.add(s);
+                }
+            if (drops.size() > 0)
+                mDrops.put(key, drops);
+        }
+
+        for (String key : mDrops.keySet()) {
+            dropLore.add(ChatColor.DARK_GRAY + key + ":\n");
+            for (Drop s : mDrops.get(key))
+                dropLore.add(ChatColor.DARK_GRAY + "От " + s.min_amount + " до " + s.max_amount + " с вер." + " " + s.chance + "%\n");
+        }
+        return dropLore;
     }
 
     private boolean IsDropped(HashMap<String, List<Drop>> drop) {

@@ -2,11 +2,11 @@ package ru.empireprojekt.empireitems.events;
 
 import com.google.gson.internal.$Gson$Preconditions;
 import de.tr7zw.nbtapi.NBTItem;
+import github.scarsz.discordsrv.hooks.PlaceholderAPIExpansion;
+import github.scarsz.discordsrv.util.PlaceholderUtil;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -15,10 +15,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -46,7 +44,10 @@ public class GenericListener implements Listener {
     public GenericListener(EmpireItems plugin, Map<String, List<InteractEvent>> item_events) {
         this.plugin = plugin;
         this.item_events = item_events;
-        DiscordSRV.api.subscribe(this);
+        if (plugin.getServer().getPluginManager().getPlugin("discordsrv") != null)
+            DiscordSRV.api.subscribe(this);
+        else
+            System.out.println(ChatColor.YELLOW + "DiscordSRV Is not installed!");
     }
 
     public void UnregisterListener() {
@@ -56,6 +57,9 @@ public class GenericListener implements Listener {
         BlockBreakEvent.getHandlerList().unregister(this);
         EntityDeathEvent.getHandlerList().unregister(this);
         PlayerItemConsumeEvent.getHandlerList().unregister(this);
+        AsyncPlayerChatEvent.getHandlerList().unregister(this);
+        messages = new ArrayList<>();
+
     }
 
     @EventHandler
@@ -74,7 +78,7 @@ public class GenericListener implements Listener {
     }
 
 
-    private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]{3}|[a-zA-Z0-9_]{4}|[a-zA-Z0-9_]{5}|[a-zA-Z0-9_]{6}|[a-zA-Z0-9_]{7}|[a-zA-Z0-9_]{8}|[a-zA-Z0-9_]{9}|[a-zA-Z0-9_]{10} ):");
+    private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]{3}|[a-zA-Z0-9_]{4}|[a-zA-Z0-9_]{5}|[a-zA-Z0-9_]{6}|[a-zA-Z0-9_]{7}|[a-zA-Z0-9_]{8}|[a-zA-Z0-9_]{9}|[a-zA-Z0-9_]{10}|[a-zA-Z0-9_]{11}|[a-zA-Z0-9_]{12}|[a-zA-Z0-9_]{13} ):");
 
     List<String> messages = new ArrayList<String>();
 
@@ -90,7 +94,13 @@ public class GenericListener implements Listener {
         Matcher matcher = pattern.matcher(msg);
         while (matcher.find()) {
             String emoji = msg.substring(matcher.start(), matcher.end());
-            msg = msg.replace(emoji, plugin.emojis.get(emoji) + "");
+            String toReplace = plugin.emojis.get(emoji);
+            if (toReplace == null)
+                toReplace = msg.replaceAll(":", ".");
+
+            msg = msg.replace(emoji, toReplace + "");
+
+
             matcher = pattern.matcher(msg);
         }
         return msg;
@@ -100,7 +110,6 @@ public class GenericListener implements Listener {
     public void onChatMessageFromDiscord(DiscordGuildMessagePostProcessEvent event) { // From Discord to in-game
         // TODO: Add permission checking for Discord
         String message = event.getProcessedMessage();
-
         event.setProcessedMessage(GetEmoji(message, emojiPattern));
     }
 
@@ -159,25 +168,78 @@ public class GenericListener implements Listener {
     }
 
 
+    public void PlaySplash(Player p, String splash) {
+        if (!plugin.items.containsKey(splash) || p == null) {
+            System.out.println("Splash отсутствует либо игрок=null!: " + splash);
+            return;
+        }
+        ItemStack itemInHand = p.getInventory().getItemInMainHand().clone();
+        ItemStack totemItem = plugin.items.get(splash).clone();
+        p.getInventory().setItemInMainHand(totemItem);
+        p.playEffect(EntityEffect.TOTEM_RESURRECT);
+        p.getInventory().setItemInMainHand(itemInHand);
+    }
+
+
     @EventHandler
     public void onClick(PlayerInteractEvent event) {
-        if (event.getItem() != null) {
-            ItemMeta meta = event.getItem().getItemMeta();
+        Player p = event.getPlayer();
+        ItemStack itemStack = p.getInventory().getItemInMainHand();
+        ItemMeta meta = itemStack.getItemMeta();
+
+        ManageEvent(p.getInventory().getItemInMainHand(),event.getAction().name(),p);
+        ManageEvent(p.getInventory().getItemInOffHand(),event.getAction().name(),p);
+    }
+
+    private void ManageEvent(ItemStack item, String eventName, Player p) {
+        if (item.getItemMeta() != null) {
             NamespacedKey empireID = new NamespacedKey(plugin, "id");
-            String id = meta.getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
+            String id = item.getItemMeta().getPersistentDataContainer().get(empireID, PersistentDataType.STRING);
             List<InteractEvent> events = item_events.get(id);//Получаем эвент конкретного предмета
             if (events != null)
                 for (InteractEvent ev : events)
-                    if (ev.click.equalsIgnoreCase(event.getAction().name()))
-                        HandleEvent(ev, event.getPlayer());
-
-
+                    if (ev.click.equalsIgnoreCase(eventName))
+                        HandleEvent(ev, p);
         }
+    }
 
+
+    private void ManageDurability(ItemStack itemStack, int takeDurability) {
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta != null) {
+            PersistentDataContainer container = meta.getPersistentDataContainer();
+            NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
+            if (container.has(durabilityMechanicNamespace, PersistentDataType.INTEGER)) {
+                int durability = container.get(durabilityMechanicNamespace, PersistentDataType.INTEGER);
+                durability += takeDurability;
+                container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, durability);
+                List<String> itemLore = meta.getLore();
+                if (itemLore == null || itemLore.size() == 0)
+                    itemLore = new ArrayList<>();
+                itemLore.add(plugin.HEXPattern("&7Использований: " + durability));
+                for (int i = 0; i < itemLore.size() - 1; ++i)
+                    if (itemLore.get(i).contains("Использований")) {
+                        itemLore.remove(i);
+                        break;
+                    }
+                meta.setLore(itemLore);
+                itemStack.setItemMeta(meta);
+                if (durability <= 0)
+                    itemStack.setAmount(0);
+            }
+        }
     }
 
 
     private void HandleEvent(InteractEvent ev, Player player) {
+        if (ev.takeDurability != 0) {
+            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+            ManageDurability(mainHandItem, ev.takeDurability);
+            NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
+            if (mainHandItem.getItemMeta() == null || mainHandItem.getItemMeta().getPersistentDataContainer().get(durabilityMechanicNamespace, PersistentDataType.INTEGER) == null)
+                ManageDurability(player.getInventory().getItemInOffHand(), ev.takeDurability);
+
+        }
         if (ev.play_sound != null)
             player.getWorld().playSound(player.getLocation(),
                     ev.play_sound, 1, 1);
@@ -188,9 +250,9 @@ public class GenericListener implements Listener {
         if (ev.execute_commands != null) {
             for (String cmd : ev.execute_commands)
                 if (!ev.as_console)
-                    player.performCommand(cmd);
+                    player.performCommand(PlaceholderAPI.setPlaceholders(player, cmd));
                 else
-                    Bukkit.dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd);
+                    Bukkit.dispatchCommand(Bukkit.getServer().getConsoleSender(), PlaceholderAPI.setPlaceholders(player, cmd));
         }
         if (ev.potion_effects != null)
             player.addPotionEffects(ev.potion_effects);
@@ -200,14 +262,40 @@ public class GenericListener implements Listener {
     }
 
 
-    //DONE
     @EventHandler
-    public void durabilityEvent(PlayerItemDamageEvent e) {
-        ItemStack item = e.getItem();
+    public void repairEvent(PlayerItemMendEvent e) {
+        ChangeCustomDurability(e.getItem(), +e.getRepairAmount());
+    }
+
+    @EventHandler
+    public void anvilEvent(PrepareAnvilEvent e) {
+        if (e.getResult() != null) {
+            ItemStack itemStack = e.getResult();
+            ItemMeta meta = itemStack.getItemMeta();
+            if (meta == null)
+                return;
+            NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
+            NamespacedKey maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
+            PersistentDataContainer container = meta.getPersistentDataContainer();
+            if (!container.has(durabilityMechanicNamespace, PersistentDataType.INTEGER))
+                return;
+
+            int maxDurabilityCustom = container.get(maxCustomDurability, PersistentDataType.INTEGER);
+            NBTItem nbtItem = new NBTItem(itemStack);
+            int Damage = nbtItem.getInteger("Damage");
+            int maxDefault = itemStack.getType().getMaxDurability();
+            int durability;
+            durability = maxDurabilityCustom - Damage * maxDurabilityCustom / maxDefault;
+            container = meta.getPersistentDataContainer();
+            container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, durability);
+            itemStack.setItemMeta(meta);
+        }
+    }
+
+    private void ChangeCustomDurability(ItemStack item, int damage) {
         ItemMeta meta = item.getItemMeta();
         NamespacedKey durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
         NamespacedKey maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
-
 
         if (meta == null)
             return;
@@ -216,36 +304,33 @@ public class GenericListener implements Listener {
             return;
 
         int durability = container.get(durabilityMechanicNamespace, PersistentDataType.INTEGER);
-        durability -= e.getDamage();
+        int maxDurabilityCustom = container.get(maxCustomDurability, PersistentDataType.INTEGER);
+        durability += damage;
         if (durability <= 0) {
             item.setAmount(0);
             return;
         }
-        container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, durability);
-        if (meta.getLore() == null || meta.getLore().size() == 0) {
-            List<String> list = new ArrayList<String>();
-            list.add("&7Прочность: " + durability);
-            plugin.HEXPattern(list);
-            meta.setLore(list);
-        } else {
-            List<String> lore = meta.getLore();
-            if (!lore.contains("Прочность"))
-                lore.add(plugin.HEXPattern("&7Прочность: " + durability));
-            else
-                for (int i = 0; i < lore.size(); ++i)
-                    if (lore.get(i).contains("Прочность"))
-                        lore.set(i, plugin.HEXPattern("&7Прочность: " + durability));
-
-            meta.setLore(lore);
-
+        if (durability > maxDurabilityCustom) {
+            maxDurabilityCustom = durability;
+            container.set(maxCustomDurability, PersistentDataType.INTEGER, maxDurabilityCustom);
         }
+
+        container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, durability);
         item.setItemMeta(meta);
         NBTItem nbtItem = new NBTItem(item);
-        int d = item.getType().getMaxDurability() - (int) (item.getType().getMaxDurability() / (
-                meta.getPersistentDataContainer().get(maxCustomDurability, PersistentDataType.INTEGER)
-                        / (double) durability));
+
+        int d = item.getType().getMaxDurability() - item.getType().getMaxDurability() * durability / maxDurabilityCustom;
+
+
         nbtItem.setInteger("Damage", d);
         nbtItem.applyNBT(item);
+    }
+
+
+    //DONE
+    @EventHandler
+    public void durabilityEvent(PlayerItemDamageEvent e) {
+        ChangeCustomDurability(e.getItem(), -e.getDamage());
     }
 
     @EventHandler

@@ -29,7 +29,7 @@ public class TabCompletition implements TabCompleter {
             arguments.add("give");
             return arguments;
         }
-        else if (args.length==2){
+        else if (args.length==3){
             if (args[0].equalsIgnoreCase("give")){
                 return items;
             }

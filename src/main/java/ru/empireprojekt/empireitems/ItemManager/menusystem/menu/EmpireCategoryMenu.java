@@ -19,7 +19,13 @@ public class EmpireCategoryMenu extends PaginatedMenu {
         this.slot = slot;
         maxPage=getMaxPages();
     }
-
+    public EmpireCategoryMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin, int slot,int page) {
+        super(playerMenuUtility);
+        this.plugin = plugin;
+        this.slot = slot;
+        this.page = page;
+        maxPage=getMaxPages();
+    }
     public String getMenuName() {
         return plugin.HEXPattern(plugin.menuItems.get(slot).categoryName);
     }
@@ -50,7 +56,7 @@ public class EmpireCategoryMenu extends PaginatedMenu {
                 inventory.clear();
                 setMenuItems();
             }else
-                new EmpireCraftMenu(playerMenuUtility,slot,plugin,plugin.menuItems.get(slot).categoryItems.get(page+e.getSlot())).open();
+                new EmpireCraftMenu(playerMenuUtility,slot,page,plugin,plugin.menuItems.get(slot).categoryItems.get(page*maxItemsPerPage+e.getSlot())).open();
 
         }else return;
 

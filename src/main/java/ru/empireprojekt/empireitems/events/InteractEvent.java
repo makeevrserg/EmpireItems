@@ -25,6 +25,7 @@ public class InteractEvent {
     public Collection<PotionEffect> potion_effects;
     public List<PotionEffectType> remove_potion_effect;
     public int explosionPower = -1;
+    public int takeDurability = 0;
     public InteractEvent() {
         execute_commands = new ArrayList<String>();
         potion_effects = new ArrayList<PotionEffect>();

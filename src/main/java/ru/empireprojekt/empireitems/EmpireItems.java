@@ -15,9 +15,11 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerItemMendEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -55,6 +57,8 @@ public class EmpireItems extends JavaPlugin {
     HashMap<Integer, String> usedModelData;
     private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<Player, PlayerMenuUtility>();
     MenuListener menuListener;
+    int maxCustomModelDate = 0;
+
 
     public static PlayerMenuUtility getPlayerMenuUtility(Player p) {
         PlayerMenuUtility playerMenuUtility;
@@ -226,6 +230,8 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.permission = generic_item.getString("permission");
                 genericItem.material = generic_item.getString("material");
                 genericItem.customModelData = generic_item.getInt("custom_model_data");
+                if (genericItem.customModelData > maxCustomModelDate)
+                    maxCustomModelDate = genericItem.customModelData;
                 genericItem.enabled = generic_item.getBoolean("enabled");
                 genericItem.itemFlags = new ArrayList<String>();
                 genericItem.itemFlags = generic_item.getStringList("item_flags");
@@ -243,8 +249,9 @@ public class EmpireItems extends JavaPlugin {
                 if (generic_item.contains("ingredients") && generic_item.contains("pattern")) {
                     genericItem.ingredients = new HashMap<Character, String>();
                     genericItem.pattern = generic_item.getList("pattern");
-                    for (String k : generic_item.getConfigurationSection("ingredients").getKeys(false))
+                    for (String k : generic_item.getConfigurationSection("ingredients").getKeys(false)) {
                         genericItem.ingredients.put(k.charAt(0), generic_item.getConfigurationSection("ingredients").getString(k));
+                    }
 
                 }
 
@@ -300,6 +307,7 @@ public class EmpireItems extends JavaPlugin {
                             interactEvent.sound_volume = event.getInt("play_sound.volume", 1);
                             interactEvent.sound_pitch = event.getInt("play_sound.pitch", 1);
                             interactEvent.execute_commands = event.getStringList("execute_commands");
+                            interactEvent.takeDurability = event.getInt("durability", 0);
                             if (event.contains("explosion.power"))
                                 interactEvent.explosionPower = event.getInt("explosion.power");
 
@@ -336,6 +344,7 @@ public class EmpireItems extends JavaPlugin {
                     genericItem.PrintItem();
             }
         }
+        System.out.println(ChatColor.GREEN + "Последняя custom_model_data = " + maxCustomModelDate);
     }
 
 
@@ -346,7 +355,13 @@ public class EmpireItems extends JavaPlugin {
         }
         sender.sendMessage(ChatColor.GREEN + "Перезагружаем EmpireItems");
 
-
+        Iterator<Recipe> ite = getServer().recipeIterator();
+        Recipe recipe;
+        while (ite.hasNext()){
+            recipe = ite.next();
+            if (recipe!=null && itemRecipe.containsKey(recipe.getResult()))
+                ite.remove();
+        }
         //Bukkit.clearRecipes();
         generic_item.reloadConfig();
         EnableFunc();
@@ -367,6 +382,33 @@ public class EmpireItems extends JavaPlugin {
         if (label.equalsIgnoreCase("emgui")) {
             new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
         }
+        if (label.equalsIgnoreCase("emrepair")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                ItemStack item = player.getInventory().getItemInMainHand();
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    NBTItem nbtItem = new NBTItem(item);
+                    int Damage = nbtItem.getInteger("Damage");
+                    if (Damage == 0) {
+                        NamespacedKey durabilityMechanicNamespace = new NamespacedKey(this, "durability");
+                        NamespacedKey maxCustomDurability = new NamespacedKey(this, "maxCustomDurability");
+                        PersistentDataContainer container = meta.getPersistentDataContainer();
+                        if (container.get(maxCustomDurability, PersistentDataType.INTEGER)!=null)
+                            container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, container.get(maxCustomDurability, PersistentDataType.INTEGER));
+                        item.setItemMeta(meta);
+                    }
+                }
+            }
+        }
+        if (label.equalsIgnoreCase("emsplash") && args.length==2){
+            if (Bukkit.getPlayer(args[0])!=null && items.containsKey(args[1])){
+                genericListener.PlaySplash(Bukkit.getPlayer(args[0]),args[1]);
+            }else{
+                sender.sendMessage(ChatColor.RED+"Неверные значения");
+            }
+        }
+
         //emnbt delete NbtName
         //emnbt set NbtName NbtValue
         if (sender.hasPermission("empireitems.changenbt") && sender instanceof Player && label.equalsIgnoreCase("emnbt")) {
@@ -415,18 +457,25 @@ public class EmpireItems extends JavaPlugin {
 
 
         }
-        if (label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp")) {
+        if (sender.hasPermission("empireitems.empgive") && label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp")) {
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload"))
                     return reload(sender);
 
-                if (args[0].equalsIgnoreCase("give") && args[1] != null) {
-                    Player player = (Player) sender;
-                    if (items.containsKey(args[1]))
-                        player.getInventory().addItem(items.get(args[1]));
+                if (args.length >= 3 && args[0].equalsIgnoreCase("give") && args[1] != null && args[2] != null) {
+                    Player player = Bukkit.getPlayer(args[1]);
+                    int count = 1;
+                    if (args.length >= 4 && args[3] != null)
+                        try {
+                            count = Integer.parseInt(args[3]);
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(ChatColor.YELLOW + "Неверное значение");
+                        }
+                    if (player != null && items.containsKey(args[2]))
+                        for (int i = 0; i < count; ++i)
+                            player.getInventory().addItem(items.get(args[2]));
                     else {
-                        sender.sendMessage(ChatColor.YELLOW + "Такого предмета нет:" + args[1]);
-                        System.out.println(ChatColor.YELLOW + "Такого предмета нет:" + args[1]);
+                        sender.sendMessage(ChatColor.YELLOW + "Такого предмета или игрока нет:" + args[1] + ";" + args[2]);
                     }
                     //todo
                 }
@@ -512,7 +561,6 @@ public class EmpireItems extends JavaPlugin {
 
         items.put(key, item);
         if (genericItem.pattern != null) {
-
             ShapedRecipe recipe = getGenericRecipe(genericItem, item);
             if (recipe != null)
                 try {
@@ -530,16 +578,18 @@ public class EmpireItems extends JavaPlugin {
         ShapedRecipe recipe = new ShapedRecipe(key, item);
         if (genericItem.pattern != null) {
             recipe.shape(genericItem.pattern.get(0).toString(), genericItem.pattern.get(1).toString(), genericItem.pattern.get(2).toString());
-            for (char keys : genericItem.ingredients.keySet())
-                if (Material.getMaterial(genericItem.ingredients.get(keys)) != null) {
-                    recipe.setIngredient(keys, Material.getMaterial(genericItem.ingredients.get(keys)));
-                } else if (items.get(genericItem.ingredients.get(keys)) != null) {
-                    recipe.setIngredient(keys, new RecipeChoice.ExactChoice(items.get(genericItem.ingredients.get(keys))));
+            for (char keys : genericItem.ingredients.keySet()) {
+                String itemKey = genericItem.ingredients.get(keys);
+                if (Material.getMaterial(itemKey) != null) {
+                    recipe.setIngredient(keys, Material.getMaterial(itemKey));
+                } else if (items.containsKey(itemKey)) {
+                    recipe.setIngredient(keys, new RecipeChoice.ExactChoice(items.get(itemKey)));
                 } else {
-                    System.out.println(ChatColor.YELLOW + "Введен неверный материал");
+                    System.out.println(ChatColor.YELLOW + "Введен неверный материал: " + genericItem.itemId + ";" + itemKey + ":" + keys);
                     recipe = null;
                     break;
                 }
+            }
 
         }
         itemRecipe.put(item, recipe);
