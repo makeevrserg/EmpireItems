@@ -1,9 +1,7 @@
 package ru.empireprojekt.empireitems.files;
 
-import com.google.common.collect.Comparators;
 import com.google.common.io.Files;
 import org.bukkit.ChatColor;
-import org.bukkit.block.data.type.Comparator;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import ru.empireprojekt.empireitems.EmpireItems;
@@ -38,7 +36,7 @@ public class GenericItemManager {
         this.guiFileConfig = YamlConfiguration.loadConfiguration(this.guiFile);
 
 
-        itemFilesConfigsList = new ArrayList<FileConfiguration>();
+        itemFilesConfigsList = new ArrayList<>();
         for (File f : itemFilesList) {
             this.itemFilesConfigsList.add(
                     YamlConfiguration.loadConfiguration(f)
@@ -60,10 +58,14 @@ public class GenericItemManager {
 
 
     private void LoadItemFiles() {
-        itemFilesList = new ArrayList<File>();
+        itemFilesList = new ArrayList<>();
 
         if (this.plugin.getDataFolder().listFiles() != null) {
             File[] files = this.plugin.getDataFolder().listFiles();
+            if (files==null){
+                System.out.println(plugin.CONSTANTS.PLUGIN_MESSAGE+ChatColor.RED+"Нет файлов в папке");
+                return;
+            }
             Arrays.sort(files);
 
             for (final File fileEntry : files)

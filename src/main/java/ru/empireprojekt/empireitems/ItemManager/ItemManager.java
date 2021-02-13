@@ -17,20 +17,21 @@ public class ItemManager {
         String material = null;
         String namespace = "empire_items";
         int custom_model_data = 1;
+        boolean isBlock = false;
 
-        public mItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data) {
+        mItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data, boolean isBlock) {
             this.namespace = namespace;
             this.texture_path = texture_path;
             this.model_path = model_path;
             this.item_name = item_name;
-
+            this.isBlock = isBlock;
             this.material = material;
             this.custom_model_data = custom_model_data;
         }
     }
 
-    List<mItem> items;
-    EmpireItems plugin;
+    private List<mItem> items;
+    private EmpireItems plugin;
 
     public List<String> GetNames() {
         List<String> mArgs = new ArrayList<String>();
@@ -44,8 +45,8 @@ public class ItemManager {
         items = new ArrayList<mItem>();
     }
 
-    public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data) {
-        items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data));
+    public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data,boolean isBlock) {
+        items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data,isBlock));
     }
 
 
@@ -99,6 +100,12 @@ public class ItemManager {
         itemObj.addProperty("parent", parent);
         JsonObject layer = new JsonObject();
         layer.addProperty("layer0", namespace + ":" + layerPath.replace(".png", ""));
+        if (parent.contains("block_real")){
+
+            layer.addProperty("all",namespace + ":" + layerPath.replace(".png", ""));
+            layer.addProperty("particle",namespace + ":" + layerPath.replace(".png", ""));
+
+        }
         itemObj.add("textures", layer);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -142,12 +149,12 @@ public class ItemManager {
                 file.close();
             } catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.RED + "Не удалось очистить файл: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.RED + "Не удалось очистить файл: " + item.material + ".json");
             }
         }
 
 
-        System.out.println(ChatColor.YELLOW + "Generating Models");
+        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Generating Models");
         for (mItem item : items) {
             try {
                 //Generating minecraft models
@@ -203,8 +210,12 @@ public class ItemManager {
                     else
                         overrides.add(GetGenericObject(item.namespace + ":auto_generated/" + item.item_name, item.custom_model_data));
                     jsonFile.add("overrides", overrides);
-                    if (item.model_path == null || item.model_path.length() == 0)
-                        auto_generate(jsonFile.get("parent").toString().replaceAll("\"", ""), item.namespace, item.texture_path, item.item_name);
+                    if (item.model_path == null || item.model_path.length() == 0) {
+                        if (item.isBlock)
+                            auto_generate("block/base/block_real", item.namespace, item.texture_path, item.item_name);
+                        else
+                            auto_generate(jsonFile.get("parent").toString().replaceAll("\"", ""), item.namespace, item.texture_path, item.item_name);
+                    }
                 }
 
                 FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
@@ -215,17 +226,17 @@ public class ItemManager {
 
             } catch (FileNotFoundException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.YELLOW + "Не найден файл: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Не найден файл: " + item.material + ".json");
             } catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.YELLOW + "Возникла ошибка при выполении файла: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Возникла ошибка при выполении файла: " + item.material + ".json");
             }
         }
     }
 
 
     public void print() {
-        System.out.println(ChatColor.GREEN + "--------------------------ItemManager--------------------------");
+        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.GREEN + "--------------------------ItemManager--------------------------");
         for (mItem item : items) {
 
             System.out.println("namespace: " + item.namespace);

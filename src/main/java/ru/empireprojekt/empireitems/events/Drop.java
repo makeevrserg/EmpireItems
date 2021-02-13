@@ -1,7 +1,5 @@
 package ru.empireprojekt.empireitems.events;
 
-import org.bukkit.entity.Entity;
-
 public class Drop {
     public String item;
     public int min_amount;

@@ -12,8 +12,8 @@ import ru.empireprojekt.empireitems.ItemManager.menusystem.PaginatedMenu;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
 
 public class EmpireCategoriesMenu extends PaginatedMenu {
-    EmpireItems plugin;
-    int maxPages = 0;
+    private EmpireItems plugin;
+    private int maxPages;
 
     public EmpireCategoriesMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin) {
         super(playerMenuUtility);
@@ -22,7 +22,7 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
     }
 
     public String getMenuName() {
-        return plugin.generic_item.getGuiConfig().getString("settings.categories_text", "Категории");
+        return plugin.CONSTANTS.HEXPattern(plugin.generic_item.getGuiConfig().getString("settings.categories_text", "Категории"));
     }
 
     public int getSlots() {
@@ -52,9 +52,7 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
                 inventory.clear();
                 setMenuItems();
             }
-        }else
-            return;
-
+        }
     }
 
     private int getMaxPages() {
@@ -78,13 +76,13 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
                 else if (plugin.items.containsKey(menuItem.categoryIcon))
                     item = plugin.items.get(menuItem.categoryIcon).clone();
                 else {
-                    System.out.println(ChatColor.YELLOW + "Предмет не найден:" + menuItem.categoryIcon);
+                    System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Предмет не найден:" + menuItem.categoryIcon);
                     item = new ItemStack(Material.STONE);
                 }
                 itemMeta = item.getItemMeta().clone();
-                menuItem.categoryName=plugin.HEXPattern(menuItem.categoryName);
+                menuItem.categoryName=plugin.CONSTANTS.HEXPattern(menuItem.categoryName);
                 itemMeta.setDisplayName(menuItem.categoryName);
-                plugin.HEXPattern(menuItem.categoryLore);
+                plugin.CONSTANTS.HEXPattern(menuItem.categoryLore);
                 itemMeta.setLore(menuItem.categoryLore);
 
                 itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);

@@ -9,17 +9,17 @@ import ru.empireprojekt.empireitems.ItemManager.menusystem.PaginatedMenu;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
 
 public class EmpireCategoryMenu extends PaginatedMenu {
-    EmpireItems plugin;
-    int slot;
-    int maxPage=0;
+    private EmpireItems plugin;
+    private int slot;
+    private int maxPage;
 
-    public EmpireCategoryMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin, int slot) {
+    EmpireCategoryMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin, int slot) {
         super(playerMenuUtility);
         this.plugin = plugin;
         this.slot = slot;
         maxPage=getMaxPages();
     }
-    public EmpireCategoryMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin, int slot,int page) {
+    EmpireCategoryMenu(PlayerMenuUtility playerMenuUtility, EmpireItems plugin, int slot, int page) {
         super(playerMenuUtility);
         this.plugin = plugin;
         this.slot = slot;
@@ -27,7 +27,7 @@ public class EmpireCategoryMenu extends PaginatedMenu {
         maxPage=getMaxPages();
     }
     public String getMenuName() {
-        return plugin.HEXPattern(plugin.menuItems.get(slot).categoryName);
+        return plugin.CONSTANTS.HEXPattern(plugin.menuItems.get(slot).categoryTitle);
     }
 
     public int getSlots() {
@@ -58,7 +58,7 @@ public class EmpireCategoryMenu extends PaginatedMenu {
             }else
                 new EmpireCraftMenu(playerMenuUtility,slot,page,plugin,plugin.menuItems.get(slot).categoryItems.get(page*maxItemsPerPage+e.getSlot())).open();
 
-        }else return;
+        }
 
     }
 
@@ -76,13 +76,13 @@ public class EmpireCategoryMenu extends PaginatedMenu {
             index = super.maxItemsPerPage * page + i;
             if (index < plugin.menuItems.get(slot).categoryItems.size() && plugin.menuItems.get(slot).categoryItems.get(index) != null) {
                 String item = plugin.menuItems.get(slot).categoryItems.get(index);
-                ItemStack itemStack = null;
+                ItemStack itemStack;
                 if (Material.getMaterial(item) != null)
                     itemStack = new ItemStack(Material.getMaterial(item));
                 else if (plugin.items.containsKey(item))
                     itemStack = plugin.items.get(item);
                 else {
-                    System.out.println(ChatColor.YELLOW + "Предмет не найден:" + item);
+                    System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Предмет не найден:" + item);
                     itemStack = new ItemStack(Material.STONE);
                 }
                 inventory.setItem(i, itemStack);

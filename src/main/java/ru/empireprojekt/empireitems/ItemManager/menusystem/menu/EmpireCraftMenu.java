@@ -1,19 +1,23 @@
 package ru.empireprojekt.empireitems.ItemManager.menusystem.menu;
 
+import com.iwebpp.crypto.TweetNaclFast;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import ru.empireprojekt.empireitems.EmpireItems;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.Menu;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
 import ru.empireprojekt.empireitems.events.Drop;
+import ru.empireprojekt.empireitems.events.GenericListener;
 
 import java.util.*;
 
@@ -32,7 +36,7 @@ public class EmpireCraftMenu extends Menu {
     }
 
     public String getMenuName() {
-        return item;
+        return plugin.CONSTANTS.HEXPattern(plugin.generic_item.getGuiConfig().getString("settings.workbench_ui", "Крафт"));
     }
 
     public int getSlots() {
@@ -44,29 +48,33 @@ public class EmpireCraftMenu extends Menu {
             if (e.getSlot() == 49) {
                 new EmpireCategoryMenu(playerMenuUtility, plugin, slot, page).open();
             } else if (e.getSlot() == 43) {
-                if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("empireitems.get") && plugin.items.containsKey(item))
+                if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("empireitems.give") && plugin.items.containsKey(item)) {
+
                     playerMenuUtility.getPlayer().getInventory().addItem(plugin.items.get(item));
+                }
             }
         }
     }
 
-    public void setMenuItems() {
 
+    private List<ItemStack> getItemRecipe() {
         ShapedRecipe recipe = plugin.itemRecipe.get(plugin.items.get(item));
-
-
-        inventory.setItem(25, plugin.items.get(item));
-
-
         if (recipe != null) {
-            int loc = 13;
-            int count = 1;
             List<ItemStack> it = new ArrayList<ItemStack>();
             for (String s : recipe.getShape()) {
                 it.add(recipe.getIngredientMap().get(s.charAt(0)));
                 it.add(recipe.getIngredientMap().get(s.charAt(1)));
                 it.add(recipe.getIngredientMap().get(s.charAt(2)));
             }
+            return it;
+        }
+        return null;
+    }
+
+    public void setMenuItems() {
+        inventory.setItem(25, plugin.items.get(item));
+        List<ItemStack> it = getItemRecipe();
+        if (it != null) {
 
 
             inventory.setItem(11, it.get(0));
@@ -97,23 +105,43 @@ public class EmpireCraftMenu extends Menu {
             drop = plugin.items.get(plugin.generic_item.getGuiConfig().getString("settings.drop_btn", "drop"));
         else drop = new ItemStack(Material.BARRIER);
         ItemMeta dropMeta = drop.getItemMeta();
-
         List<String> dropLore = new ArrayList<String>();
 
+
+
+        if (plugin.itemUpgradesInfo.containsKey(item)) {
+            ItemStack upgrade = drop.clone();
+            ItemMeta upgradeMeta = upgrade.getItemMeta();
+            List<String> upgradeLore = new ArrayList<>();
+            upgradeMeta.setDisplayName(ChatColor.WHITE + "Улучшает:");
+            for (EmpireItems.itemUpgradeClass iUg : plugin.itemUpgradesInfo.get(item)) {
+                upgradeLore.add(ChatColor.GRAY + GenericListener.getStrAttr(iUg.attribute) + ":[" + iUg.min_add + ";" + iUg.max_add + "]");
+            }
+            upgradeMeta.setLore(upgradeLore);
+            upgrade.setItemMeta(upgradeMeta);
+            inventory.setItem(45, upgrade);
+        }
+
+        if (plugin.itemUpgradeCostDecreaser.containsKey(item)) {
+            ItemStack upgradeCostDecrease = drop.clone();
+            ItemMeta upgradeCostDecreaseMeta = upgradeCostDecrease.getItemMeta();
+            upgradeCostDecreaseMeta.setDisplayName(ChatColor.WHITE + "Уменьшает стоимость апгрейда на " + plugin.itemUpgradeCostDecreaser.get(item));
+            upgradeCostDecrease.setItemMeta(upgradeCostDecreaseMeta);
+            inventory.setItem(47, upgradeCostDecrease);
+        }
         if (IsDropped(plugin.mobDrops))
             dropLore = getDrops(dropLore, plugin.mobDrops);
         if (IsDropped(plugin.blockDrops))
             dropLore = getDrops(dropLore, plugin.blockDrops);
 
-        if (dropLore.size() != 0) {
 
+        if (dropLore.size() != 0) {
             dropMeta.setDisplayName(ChatColor.WHITE + "Выпадает из:");
             dropMeta.setLore(dropLore);
             drop.setItemMeta(dropMeta);
-
             inventory.setItem(46, drop);
         }
-        if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("getItem")) {
+        if (playerMenuUtility.getPlayer().hasPermission("empireitems.give")) {
             ItemStack getItem;
             if (plugin.items.containsKey(
                     plugin.generic_item.getGuiConfig().getString("settings.give_btn")
@@ -125,8 +153,8 @@ public class EmpireCraftMenu extends Menu {
         }
     }
 
-    private List<String> getDrops(List<String> dropLore, HashMap<String, List<Drop>> standartDrops) {
-        HashMap<String, List<Drop>> mDrops = new HashMap<>();
+    private List<String> getDrops(List<String> dropLore, HashMap<String, Drop[]> standartDrops) {
+        HashMap<String, Drop[]> mDrops = new HashMap<>();
 
         for (String key : standartDrops.keySet()) {
             List<Drop> drops = new ArrayList<>();
@@ -134,19 +162,22 @@ public class EmpireCraftMenu extends Menu {
                 if (item.equals(s.item)) {
                     drops.add(s);
                 }
-            if (drops.size() > 0)
-                mDrops.put(key, drops);
+            if (drops.size() > 0) {
+                Drop[] mDrop = new Drop[0];
+                mDrop = drops.toArray(mDrop);
+                mDrops.put(key, mDrop);
+            }
         }
 
         for (String key : mDrops.keySet()) {
-            dropLore.add(ChatColor.DARK_GRAY + key + ":\n");
+            dropLore.add(ChatColor.GRAY + key + ":\n");
             for (Drop s : mDrops.get(key))
-                dropLore.add(ChatColor.DARK_GRAY + "От " + s.min_amount + " до " + s.max_amount + " с вер." + " " + s.chance + "%\n");
+                dropLore.add(ChatColor.GRAY + "От " + s.min_amount + " до " + s.max_amount + " с вер." + " " + s.chance + "%\n");
         }
         return dropLore;
     }
 
-    private boolean IsDropped(HashMap<String, List<Drop>> drop) {
+    private boolean IsDropped(HashMap<String, Drop[]> drop) {
         for (String key : drop.keySet())
             for (Drop s : drop.get(key))
                 if (item.equals(s.item))

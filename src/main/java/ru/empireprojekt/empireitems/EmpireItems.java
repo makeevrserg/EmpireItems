@@ -13,9 +13,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerItemMendEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -36,31 +34,46 @@ import ru.empireprojekt.empireitems.events.GenericListener;
 import ru.empireprojekt.empireitems.events.InteractEvent;
 import ru.empireprojekt.empireitems.files.GenericItemManager;
 
-import javax.swing.*;
 import java.io.File;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class EmpireItems extends JavaPlugin {
 
     public GenericItemManager generic_item;
     public Map<String, ItemStack> items;
     public HashMap<ItemStack, ShapedRecipe> itemRecipe;
-    public Map<String, List<InteractEvent>> item_events;
-    TabCompletition tabCompletition;
-    GenericListener genericListener;
-    ItemManager itemManager;
+    private Map<String, InteractEvent[]> item_events;
+    private TabCompletition tabCompletition;
+    public GenericListener genericListener;
+    private ItemManager itemManager;
     public List<MenuItems> menuItems;
-    public HashMap<String, List<Drop>> mobDrops;
-    public HashMap<String, List<Drop>> blockDrops;
-    HashMap<Integer, String> usedModelData;
-    private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<Player, PlayerMenuUtility>();
-    MenuListener menuListener;
-    int maxCustomModelDate = 0;
+    public HashMap<String, Drop[]> mobDrops;
+    public HashMap<String, Drop[]> blockDrops;
+    private HashMap<Integer, String> usedModelData;
+    private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<>();
+    private MenuListener menuListener;
+    private int maxCustomModelDate = 0;
+    public EmpireConstants CONSTANTS;
+
+    public PluginSettings mSettings;
+    public HashMap<String, List<itemUpgradeClass>> itemUpgradesInfo;
+    public HashMap<String, Double> itemUpgradeCostDecreaser;
+    HashMap<String, String> emojis;
+
+    public static class itemUpgradeClass {
+        public String attribute;
+        public String slot;
+        public double max_add;
+        public double min_add;
+    }
+
+    public static class PluginSettings {
+        public boolean isUpgradeEnabled = true;
+        public double upgradeCostMultiplier = 1.0;
+    }
 
 
-    public static PlayerMenuUtility getPlayerMenuUtility(Player p) {
+    private static PlayerMenuUtility getPlayerMenuUtility(Player p) {
         PlayerMenuUtility playerMenuUtility;
         if (playerMenuUtilityMap.containsKey(p))
             return playerMenuUtilityMap.get(p);
@@ -72,56 +85,37 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
-    private final Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
-
-    public List<String> HEXPattern(List<String> list) {
-        for (int i = 0; i < list.size(); ++i)
-            list.set(i, HEXPattern(list.get(i)));
-        return list;
-    }
-
-    //Создает цветное сообщение по паттерну #FFFFFF или &2
-    public String HEXPattern(String line) {
-        Matcher match = pattern.matcher(line);
-        while (match.find()) {
-            String color = line.substring(match.start(), match.end());
-            line = line.replace(color, net.md_5.bungee.api.ChatColor.of(color) + "");
-            match = pattern.matcher(line);
-        }
-        return ChatColor.translateAlternateColorCodes('&', line);
-    }
-
-
     private void generateMenuItems() {
-        menuItems = new ArrayList<MenuItems>();
+        menuItems = new ArrayList<>();
         ConfigurationSection categories = generic_item.getGuiConfig().getConfigurationSection("categories");
-        for (String key : categories.getKeys(false)) {
-            ConfigurationSection sect = categories.getConfigurationSection(key);
-            menuItems.add(
-                    new MenuItems(sect.getString("name", "null"),
-                            sect.getString("icon", "STONE"),
-                            sect.getStringList("lore"),
-                            sect.getString("permission", "null"),
-                            sect.getStringList("items")
-                    ));
-        }
+        if (categories != null)
+            for (String key : categories.getKeys(false)) {
+                ConfigurationSection sect = categories.getConfigurationSection(key);
+                assert sect != null;
+                menuItems.add(
+                        new MenuItems(sect.getString("title", "null"),
+                                sect.getString("name", "null"),
+                                sect.getString("icon", "STONE"),
+                                sect.getStringList("lore"),
+                                sect.getString("permission", "null"),
+                                sect.getStringList("items")
+                        ));
+            }
     }
 
     @Override
     public void onEnable() {
-        System.out.println("-----------------------------------------------------------");
-        System.out.println("Enabling EmpireItems...");
+        System.out.println(ChatColor.GREEN + "-----------------------------------------------------------");
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + "Enabling EmpireItems v" + getDescription().getVersion());
         EnableFunc();
-        System.out.println("Plugin EmpireItems has been Enabled!");
-        System.out.println("-----------------------------------------------------------");
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + "Plugin EmpireItems has been Enabled!");
+        System.out.println(ChatColor.GREEN + "-----------------------------------------------------------");
 
     }
 
 
-    public HashMap<String, String> emojis;
-
     private void GenerateEmoji() {
-        emojis = new HashMap<String, String>();
+        emojis = new HashMap<>();
         if (generic_item.getGuiConfig().contains("emoji"))
             for (String key : generic_item.getGuiConfig().getConfigurationSection("emoji").getKeys(false)) {
                 emojis.put(
@@ -133,14 +127,38 @@ public class EmpireItems extends JavaPlugin {
 
     //Функция для перезапуска, не надо трогать
     private void EnableFunc() {
+        CONSTANTS = new EmpireConstants(this);
+        if (getServer().getPluginManager().getPlugin("NBTAPI") != null)
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + "Item-NBT-API Найден");
+        else
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "Item-NBT-API не Найден");
+
+
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null)
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + "PlaceholderAPI Найден");
+        else
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "PlaceholderAPI не Найден");
+
+        if (getServer().getPluginManager().getPlugin("DiscordSRV") != null)
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + "DiscordSRV Найден");
+        else
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "DiscordSRV не Найден");
+
+        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null)
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + "ProtocolLib Найден");
+        else
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "ProtocolLib не Найден");
+
+        itemUpgradesInfo = new HashMap<>();
+        itemUpgradeCostDecreaser = new HashMap<>();
         itemManager = new ItemManager(this);
-        item_events = new HashMap<String, List<InteractEvent>>();
-        usedModelData = new HashMap<Integer, String>();
-        items = new HashMap<String, ItemStack>();
-        itemRecipe = new HashMap<ItemStack, ShapedRecipe>();
+        item_events = new HashMap<>();
+        usedModelData = new HashMap<>();
+        items = new HashMap<>();
+        itemRecipe = new HashMap<>();
         this.generic_item = new GenericItemManager(this);
-        mobDrops = new HashMap<String, List<Drop>>();
-        blockDrops = new HashMap<String, List<Drop>>();
+        mobDrops = new HashMap<>();
+        blockDrops = new HashMap<>();
         LoadGenericItems();
         if (genericListener != null)
             genericListener.UnregisterListener();
@@ -150,6 +168,11 @@ public class EmpireItems extends JavaPlugin {
         getCommand("emp").setTabCompleter(tabCompletition);
         getCommand("empireitems").setTabCompleter(tabCompletition);
         GenerateEmoji();
+        mSettings = new PluginSettings();
+        mSettings.isUpgradeEnabled = generic_item.getGuiConfig().getBoolean("settings.isUpgradeEnabled", true);
+        mSettings.upgradeCostMultiplier = generic_item.getGuiConfig().getDouble("settings.upgradeCostMultiplier", 1.0);
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "Item upgrade enabled:" + mSettings.isUpgradeEnabled);
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "Upgrade Cost multiplier:" + mSettings.upgradeCostMultiplier);
         generateMenuItems();
         if (menuListener != null)
             InventoryClickEvent.getHandlerList().unregister(menuListener);
@@ -160,16 +183,16 @@ public class EmpireItems extends JavaPlugin {
 
 
     //Создание дропа предметов drops.yml <String=Name of Entity,Drop=drop>
-    private void getDrop(HashMap<String, List<Drop>> map, ConfigurationSection section) {
+    private void getDrop(HashMap<String, Drop[]> map, ConfigurationSection section) {
         for (String key_ : section.getKeys(false)) {
             ConfigurationSection sect = section.getConfigurationSection(key_);
             List<Drop> mDrops = new ArrayList<Drop>();
-            if (!sect.contains("entity")) {
-                System.out.println(ChatColor.YELLOW + key_ + " Не содержит entity!");
+            if (sect!=null && !sect.contains("entity")) {
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + key_ + " Не содержит entity!");
             }
             for (String itemKey : sect.getConfigurationSection("items").getKeys(false)) {
                 ConfigurationSection mItem = sect.getConfigurationSection("items." + itemKey);
-                if (mItem.contains("item"))
+                if (mItem!=null && mItem.contains("item"))
                     mDrops.add(new Drop(
                             mItem.getString("item"),
                             mItem.getInt("min_amount", 0),
@@ -177,9 +200,11 @@ public class EmpireItems extends JavaPlugin {
                             mItem.getDouble("chance", 0.0)
                     ));
                 else
-                    System.out.println(ChatColor.YELLOW + key_ + " Не содержит выпадаемого предмета");
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + key_ + " Не содержит выпадаемого предмета");
             }
-            map.put(sect.getString("entity"), mDrops);
+            Drop[] drop = new Drop[0];
+            drop = mDrops.toArray(drop);
+            map.put(sect.getString("entity"), drop);
         }
     }
 
@@ -191,11 +216,11 @@ public class EmpireItems extends JavaPlugin {
             //Лут с мобов находится под полем loot
             if (file_generic_item.contains("loot")) {
                 ConfigurationSection loot = file_generic_item.getConfigurationSection("loot");
-                if (loot.contains("mobs")) {
+                if (loot!=null && loot.contains("mobs")) {
                     ConfigurationSection mobs = loot.getConfigurationSection("mobs");
                     getDrop(mobDrops, mobs);
                 }
-                if (loot.contains("blocks")) {
+                if (loot!=null && loot.contains("blocks")) {
                     ConfigurationSection blocks = loot.getConfigurationSection("blocks");
                     getDrop(blockDrops, blocks);
                 }
@@ -203,7 +228,7 @@ public class EmpireItems extends JavaPlugin {
             //если это файл с предметами, он должен быть под поле yml_items
             ConfigurationSection yml_items = file_generic_item.getConfigurationSection("yml_items");
             if (yml_items == null) {
-                System.out.println(ChatColor.RED + "В файле" + file_generic_item.getName() + " отсутствует поле yml_items.");
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "В файле" + file_generic_item.getName() + " отсутствует поле yml_items.");
                 continue;
             }
             //Получаем все поля предметов из yml файла
@@ -219,14 +244,32 @@ public class EmpireItems extends JavaPlugin {
                         || !generic_item.contains("custom_model_data")
                         || (!generic_item.contains("texture_path") && !generic_item.contains("model_path"))
                 ) {
-                    System.out.println(ChatColor.RED + "Предмет " + key + " не имеет одного из необходимых значений:");
-                    System.out.println(ChatColor.RED + "display_name permission enabled  material custom_model_data (texture_path or model_path)");
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "Предмет " + key + " не имеет одного из необходимых значений:");
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "display_name permission enabled  material custom_model_data (texture_path or model_path)");
                     continue;
                 }
+                if (generic_item.contains("UPGRADE_COST_DECREASE")) {
+                    itemUpgradeCostDecreaser.put(key, generic_item.getDouble("UPGRADE_COST_DECREASE"));
+                }
+                if (generic_item.contains("upgrade")) {
+                    List<itemUpgradeClass> mUpgrades = new ArrayList<>();
+                    for (String itemAttribyte : generic_item.getConfigurationSection("upgrade").getKeys(false)) {
+                        itemUpgradeClass upgrade = new itemUpgradeClass();
+                        upgrade.attribute = itemAttribyte;
+                        upgrade.max_add = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getDouble("max_add", 0.0);
+                        upgrade.min_add = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getDouble("min_add", 0.0);
+                        upgrade.slot = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getString("slot", "HAND");
+                        mUpgrades.add(upgrade);
+                    }
+                    itemUpgradesInfo.put(key, mUpgrades);
+
+                }
                 genericItem.itemId = key;
-                genericItem.display_name = HEXPattern(generic_item.getString("display_name"));
+                genericItem.isBlock = generic_item.getBoolean("isBlock", false);
+                genericItem.display_name = CONSTANTS.HEXPattern(generic_item.getString("display_name"));
                 genericItem.lore = generic_item.getStringList("lore");
-                HEXPattern(genericItem.lore);
+
+                CONSTANTS.HEXPattern(genericItem.lore);
                 genericItem.permission = generic_item.getString("permission");
                 genericItem.material = generic_item.getString("material");
                 genericItem.customModelData = generic_item.getInt("custom_model_data");
@@ -237,11 +280,11 @@ public class EmpireItems extends JavaPlugin {
                 genericItem.itemFlags = generic_item.getStringList("item_flags");
                 genericItem.durability = generic_item.getInt("durability", -1);
                 if (usedModelData.containsKey(genericItem.customModelData))
-                    System.out.println(ChatColor.YELLOW + " AlreadyUsed CustomModelData " + usedModelData.get(genericItem.customModelData) + "=" + genericItem.itemId);
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + " AlreadyUsed CustomModelData " + usedModelData.get(genericItem.customModelData) + "=" + genericItem.itemId);
                 else
                     usedModelData.put(genericItem.customModelData, genericItem.itemId);
                 if (generic_item.contains("texture_path") && generic_item.contains("model_path"))
-                    System.out.println(ChatColor.YELLOW + "Вы используете model_path и texture_path в " + key + ". Используйте что-то одно.");
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Вы используете model_path и texture_path в " + key + ". Используйте что-то одно.");
                 genericItem.texture_path = generic_item.getString("texture_path");
                 genericItem.model_path = generic_item.getString("model_path");
 
@@ -256,7 +299,7 @@ public class EmpireItems extends JavaPlugin {
                 }
 
                 //Добавляем предмет в json файла ресурс-пака
-                itemManager.AddItem(file_generic_item.getString("namespace", "empire_items"), genericItem.texture_path, genericItem.model_path, key, genericItem.material, genericItem.customModelData);
+                itemManager.AddItem(file_generic_item.getString("namespace", "empire_items"), genericItem.texture_path, genericItem.model_path, key, genericItem.material, genericItem.customModelData, genericItem.isBlock);
 
                 //Зачарования
                 if (generic_item.contains("enchantements")) {
@@ -281,7 +324,7 @@ public class EmpireItems extends JavaPlugin {
 
                 //INTERACT EVENTS
                 if (generic_item.contains("interact")) {
-                    genericItem.events = new ArrayList<InteractEvent>();
+                    List<InteractEvent> interactEvents = new ArrayList<>();
                     for (String event_key : generic_item.getConfigurationSection("interact").getKeys(false)) {
                         //Чекаем на поддерживаемый эвент
 
@@ -306,24 +349,27 @@ public class EmpireItems extends JavaPlugin {
                             interactEvent.play_sound = event.getString("play_sound.name", null);
                             interactEvent.sound_volume = event.getInt("play_sound.volume", 1);
                             interactEvent.sound_pitch = event.getInt("play_sound.pitch", 1);
-                            interactEvent.execute_commands = event.getStringList("execute_commands");
+                            interactEvent.execute_commands = event.getStringList("execute_commands").toArray(interactEvent.execute_commands);
                             interactEvent.takeDurability = event.getInt("durability", 0);
                             if (event.contains("explosion.power"))
                                 interactEvent.explosionPower = event.getInt("explosion.power");
 
 
                             //Проверяем на наличие удаляемых эффектов
+                            List<PotionEffectType> removePotionEffectsTypes = new ArrayList<>();
                             for (String effects : event.getStringList("remove_potion_effect"))
                                 if (PotionEffectType.getByName(effects) != null)
-                                    interactEvent.remove_potion_effect.add(PotionEffectType.getByName(effects));
+                                    removePotionEffectsTypes.add(PotionEffectType.getByName(effects));
                                 else
-                                    System.out.println(ChatColor.YELLOW + "Неподдерживаемый удаляемый эффект: " + effects);
+                                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Неподдерживаемый удаляемый эффект: " + effects);
+                            if (removePotionEffectsTypes.size() > 0)
+                                interactEvent.remove_potion_effect = removePotionEffectsTypes.toArray(interactEvent.remove_potion_effect);
                             //Проверяем на наличие эффектов
                             if (event.contains("potion_effect")) {
                                 interactEvent.potion_effects = new ArrayList<PotionEffect>();
                                 for (String potion_key : event.getConfigurationSection("potion_effect").getKeys(false)) {
                                     if (PotionEffectType.getByName(potion_key) == null) {
-                                        System.out.println(ChatColor.YELLOW + "Введен неверный эффект" + potion_key);
+                                        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Введен неверный эффект" + potion_key);
                                         continue;
                                     }
                                     interactEvent.potion_effects.add(new PotionEffect(
@@ -333,20 +379,40 @@ public class EmpireItems extends JavaPlugin {
                                     ));
                                 }
                             }
-                            genericItem.events.add(interactEvent);
+                            interactEvents.add(interactEvent);
                         } else {
-                            System.out.println(ChatColor.YELLOW + "Введен неподдерживаемый эвент " + event_key + " item=" + genericItem.itemId);
+                            System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Введен неподдерживаемый эвент " + event_key + " item=" + genericItem.itemId);
                         }
                     }
+                    genericItem.events = new InteractEvent[0];
+                    genericItem.events = interactEvents.toArray(genericItem.events);
                 }
-                CreateItem(genericItem, key);
+
+
+                items.put(key, CreateItem(genericItem, key));
+
                 if (generic_item.getBoolean("debug", false))
                     genericItem.PrintItem();
             }
         }
-        System.out.println(ChatColor.GREEN + "Последняя custom_model_data = " + maxCustomModelDate);
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "Последняя custom_model_data = " + maxCustomModelDate);
     }
 
+
+    private void DisablePlugin() {
+
+        if (genericListener != null)
+            genericListener.UnregisterListener();
+        CONSTANTS.onDestroy();
+
+        Iterator<Recipe> ite = getServer().recipeIterator();
+        Recipe recipe;
+        while (ite.hasNext()) {
+            recipe = ite.next();
+            if (recipe != null && itemRecipe.containsKey(recipe.getResult()))
+                ite.remove();
+        }
+    }
 
     private boolean reload(CommandSender sender) {
         if (!sender.hasPermission("empireitems.reload")) {
@@ -354,15 +420,7 @@ public class EmpireItems extends JavaPlugin {
             return true;
         }
         sender.sendMessage(ChatColor.GREEN + "Перезагружаем EmpireItems");
-
-        Iterator<Recipe> ite = getServer().recipeIterator();
-        Recipe recipe;
-        while (ite.hasNext()){
-            recipe = ite.next();
-            if (recipe!=null && itemRecipe.containsKey(recipe.getResult()))
-                ite.remove();
-        }
-        //Bukkit.clearRecipes();
+        DisablePlugin();
         generic_item.reloadConfig();
         EnableFunc();
         sender.sendMessage(ChatColor.GREEN + "Плагин успешно перезагружен!");
@@ -377,41 +435,46 @@ public class EmpireItems extends JavaPlugin {
         if (label.equalsIgnoreCase("ezip")) {
             //itemManager.print();
             itemManager.GenerateMinecraftModels();
-            System.out.println(getDataFolder() + File.separator + "pack" + File.separator + "assets");
+            System.out.println(ChatColor.AQUA + "[EmpireItems]" + getDataFolder() + File.separator + "pack" + File.separator + "assets");
         }
         if (label.equalsIgnoreCase("emgui")) {
             new EmpireCategoriesMenu(getPlayerMenuUtility((Player) sender), this).open();
+        }
+        if ((label.equalsIgnoreCase("emreplace") || label.equalsIgnoreCase("emr")) && (sender instanceof Player)) {
+            CheckReplaceItem((Player) sender);
         }
         if (label.equalsIgnoreCase("emrepair")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
                 ItemStack item = player.getInventory().getItemInMainHand();
                 ItemMeta meta = item.getItemMeta();
-                if (meta != null) {
+                if (meta != null && getServer().getPluginManager().getPlugin("NBTAPI") != null) {
                     NBTItem nbtItem = new NBTItem(item);
                     int Damage = nbtItem.getInteger("Damage");
                     if (Damage == 0) {
-                        NamespacedKey durabilityMechanicNamespace = new NamespacedKey(this, "durability");
-                        NamespacedKey maxCustomDurability = new NamespacedKey(this, "maxCustomDurability");
                         PersistentDataContainer container = meta.getPersistentDataContainer();
-                        if (container.get(maxCustomDurability, PersistentDataType.INTEGER)!=null)
-                            container.set(durabilityMechanicNamespace, PersistentDataType.INTEGER, container.get(maxCustomDurability, PersistentDataType.INTEGER));
+                        if (container.get(CONSTANTS.maxCustomDurability, PersistentDataType.INTEGER) != null)
+                            container.set(CONSTANTS.durabilityMechanicNamespace, PersistentDataType.INTEGER, container.get(CONSTANTS.maxCustomDurability, PersistentDataType.INTEGER));
                         item.setItemMeta(meta);
                     }
-                }
+                } else
+                    sender.sendMessage(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "Вы не держите кастомный предмет либо не подключен Item-NNT-API");
             }
         }
-        if (label.equalsIgnoreCase("emsplash") && args.length==2){
-            if (Bukkit.getPlayer(args[0])!=null && items.containsKey(args[1])){
-                genericListener.PlaySplash(Bukkit.getPlayer(args[0]),args[1]);
-            }else{
-                sender.sendMessage(ChatColor.RED+"Неверные значения");
+        if (label.equalsIgnoreCase("emsplash") && args.length == 2) {
+            if (Bukkit.getPlayer(args[0]) != null && items.containsKey(args[1])) {
+                genericListener.PlaySplash(Bukkit.getPlayer(args[0]), args[1]);
+            } else {
+                sender.sendMessage(ChatColor.RED + "Неверные значения");
             }
         }
 
         //emnbt delete NbtName
         //emnbt set NbtName NbtValue
-        if (sender.hasPermission("empireitems.changenbt") && sender instanceof Player && label.equalsIgnoreCase("emnbt")) {
+        if (sender.hasPermission("empireitems.changenbt") &&
+                sender instanceof Player &&
+                label.equalsIgnoreCase("emnbt") &&
+                getServer().getPluginManager().getPlugin("NBTAPI") != null) {
             Player player = (Player) sender;
             ItemStack item = player.getInventory().getItemInMainHand();
             NBTItem nbtItem = new NBTItem(item);
@@ -429,14 +492,12 @@ public class EmpireItems extends JavaPlugin {
                     nbtItem.setString(args[2], args[3]);
 
             }
-
             nbtItem.applyNBT(item);
         }
-
         if (sender instanceof Player && label.equalsIgnoreCase("emojis")) {
             ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
             BookMeta meta = (BookMeta) book.getItemMeta();
-            meta.setTitle(HEXPattern("&fЭмодзи"));
+            meta.setTitle(CONSTANTS.HEXPattern("&fЭмодзи"));
             meta.setAuthor("RomaRoman");
             String list = "";
             List<String> pages = new ArrayList<String>();
@@ -450,14 +511,14 @@ public class EmpireItems extends JavaPlugin {
                 }
             }
             pages.add(list);
-            meta.setPages(HEXPattern(pages));
+            meta.setPages(CONSTANTS.HEXPattern(pages));
 
             book.setItemMeta(meta);
             ((Player) sender).getInventory().addItem(book);
 
 
         }
-        if (sender.hasPermission("empireitems.empgive") && label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp")) {
+        if (sender.hasPermission("empireitems.empgive") && (label.equalsIgnoreCase("empireitems") || label.equalsIgnoreCase("emp"))) {
             if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("reload"))
                     return reload(sender);
@@ -484,8 +545,35 @@ public class EmpireItems extends JavaPlugin {
         return false;
     }
 
+
+    public void CheckReplaceItem(Player player) {
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        ItemMeta meta = itemInHand.getItemMeta();
+        if (meta != null && meta.getPersistentDataContainer().has(CONSTANTS.empireID, PersistentDataType.STRING)) {
+            String id = meta.getPersistentDataContainer().get(CONSTANTS.empireID, PersistentDataType.STRING);
+            if (!items.containsKey(id)) {
+                player.sendMessage(CONSTANTS.HEXPattern("&cПредмет в руке не подходит для замены!"));
+                return;
+            }
+
+            ItemStack itemToCraft = items.get(id);
+            int amount = itemInHand.getAmount();
+            itemInHand = itemToCraft.clone();
+            itemInHand.setAmount(amount);
+            player.getInventory().setItemInMainHand(itemInHand);
+            player.sendMessage(CONSTANTS.HEXPattern("&2Предмет успешно заменен"));
+
+        } else {
+            player.sendMessage(CONSTANTS.HEXPattern("&cПредмет в руке не подходит для замены!"));
+        }
+
+    }
+
+
     @Override
     public void onDisable() {
+        DisablePlugin();
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + " Выкулючаем плагин");
         super.onDisable();
     }
 
@@ -494,10 +582,13 @@ public class EmpireItems extends JavaPlugin {
     private ItemStack CreateItem(GenericItem genericItem, String key) {
         ItemStack item = new ItemStack(Material.getMaterial(genericItem.material));
         ItemMeta meta = item.getItemMeta();
-        for (String flag : genericItem.itemFlags)
-            if (ItemFlag.valueOf(flag) != null)
-                meta.addItemFlags(ItemFlag.valueOf(flag));
+        assert meta!=null;
+        for (String flag : genericItem.itemFlags) {
+            meta.addItemFlags(ItemFlag.valueOf(flag));
+        }
+        int i = -1;
         for (mAttribute attr : genericItem.attributes) {
+            i += 1;
             try {
                 meta.addAttributeModifier(
                         Attribute.valueOf(attr.name),
@@ -511,7 +602,7 @@ public class EmpireItems extends JavaPlugin {
                         )
                 );
             } catch (Exception e) {
-                System.out.println(ChatColor.YELLOW + "Не удалось создать атрибут " + attr.name);
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Не удалось создать атрибут " + attr.name + " item=" + item + ";" + e.toString());
             }
         }
         meta.setDisplayName(genericItem.display_name);
@@ -520,7 +611,7 @@ public class EmpireItems extends JavaPlugin {
         if (genericItem.enchantements != null) {
             for (String keys : genericItem.enchantements.keySet()) {
                 if (Enchantment.getByKey(NamespacedKey.minecraft(keys.toLowerCase())) == null)
-                    System.out.println(ChatColor.RED + " Введено неверное зачарование " + keys + ". Используйте зачарования из minecraft, а не spigot!");
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + " Введено неверное зачарование " + keys + ". Используйте зачарования из minecraft, а не spigot!");
                 else
                     meta.addEnchant(Enchantment.getByKey(NamespacedKey.minecraft(keys.toLowerCase())), genericItem.enchantements.get(keys), true);
             }
@@ -529,26 +620,22 @@ public class EmpireItems extends JavaPlugin {
         if (genericItem.events != null) {
             for (InteractEvent event : genericItem.events) {
                 if (event.explosionPower > 0) {
-                    NamespacedKey itemExplosionNamespace = new NamespacedKey(this, "onHitGroundExplosion");
-                    meta.getPersistentDataContainer().set(itemExplosionNamespace, PersistentDataType.INTEGER, event.explosionPower);
+                    meta.getPersistentDataContainer().set(CONSTANTS.itemExplosionNamespace, PersistentDataType.INTEGER, event.explosionPower);
                 }
 
             }
         }
 
         if (genericItem.durability > 0) {
-            NamespacedKey durabilityMechanicNamespace = new NamespacedKey(this, "durability");
-            meta.getPersistentDataContainer().set(durabilityMechanicNamespace, PersistentDataType.INTEGER, genericItem.durability);
+            meta.getPersistentDataContainer().set(CONSTANTS.durabilityMechanicNamespace, PersistentDataType.INTEGER, genericItem.durability);
 
-            NamespacedKey maxCustomDurability = new NamespacedKey(this, "maxCustomDurability");
-            meta.getPersistentDataContainer().set(maxCustomDurability, PersistentDataType.INTEGER, genericItem.durability);
+            meta.getPersistentDataContainer().set(CONSTANTS.maxCustomDurability, PersistentDataType.INTEGER, genericItem.durability);
         }
-        NamespacedKey empireID = new NamespacedKey(this, "id");
-        meta.getPersistentDataContainer().set(empireID, PersistentDataType.STRING, genericItem.itemId);
+        meta.getPersistentDataContainer().set(CONSTANTS.empireID, PersistentDataType.STRING, genericItem.itemId);
 
 
         item.setItemMeta(meta);
-        if (genericItem.material.equalsIgnoreCase("potion")) {
+        if (genericItem.material.equalsIgnoreCase("potion") && getServer().getPluginManager().getPlugin("NBTAPI") != null) {
             NBTItem nbtItem = new NBTItem(item);
             nbtItem.setInteger("CustomPotionColor", 167167167);
             nbtItem.applyNBT(item);
@@ -559,14 +646,13 @@ public class EmpireItems extends JavaPlugin {
         if (genericItem.events != null)
             item_events.put(genericItem.itemId, genericItem.events);
 
-        items.put(key, item);
         if (genericItem.pattern != null) {
             ShapedRecipe recipe = getGenericRecipe(genericItem, item);
             if (recipe != null)
                 try {
                     Bukkit.addRecipe(recipe);
                 } catch (IllegalStateException e) {
-                    System.out.println(ChatColor.RED + "Проверьте рецепт и permission предмета: " + genericItem.display_name);
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "Проверьте рецепт и permission предмета: " + genericItem.display_name);
                 }
 
         }
@@ -585,7 +671,7 @@ public class EmpireItems extends JavaPlugin {
                 } else if (items.containsKey(itemKey)) {
                     recipe.setIngredient(keys, new RecipeChoice.ExactChoice(items.get(itemKey)));
                 } else {
-                    System.out.println(ChatColor.YELLOW + "Введен неверный материал: " + genericItem.itemId + ";" + itemKey + ":" + keys);
+                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Введен неверный материал: " + genericItem.itemId + ";" + itemKey + ":" + keys);
                     recipe = null;
                     break;
                 }

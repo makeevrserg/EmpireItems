@@ -21,15 +21,15 @@ public class InteractEvent {
     public int sound_volume = 1;
     public int sound_pitch = 1;
     public boolean as_console=false;
-    public List<String> execute_commands;
+    public String[] execute_commands;
     public Collection<PotionEffect> potion_effects;
-    public List<PotionEffectType> remove_potion_effect;
+    public PotionEffectType[] remove_potion_effect;
     public int explosionPower = -1;
     public int takeDurability = 0;
     public InteractEvent() {
-        execute_commands = new ArrayList<String>();
-        potion_effects = new ArrayList<PotionEffect>();
-        remove_potion_effect = new ArrayList<PotionEffectType>();
+        execute_commands = new String[0];
+        potion_effects = new ArrayList<>();
+        remove_potion_effect = new PotionEffectType[0];
     }
 
     public InteractEvent(String click, String play_particle, int particle_count, double particle_time, String play_sound) {
@@ -40,7 +40,7 @@ public class InteractEvent {
         this.play_sound = play_sound;
     }
     public void PrintEvents(){
-        System.out.println(ChatColor.GREEN+"----------------------EVENTS-------------------");
+        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.GREEN+"----------------------EVENTS-------------------");
         System.out.println("Events: click " +click+
                 "\nplay_particle " +play_particle+
                 "\nparticle_count " +particle_count+
@@ -49,9 +49,9 @@ public class InteractEvent {
                 "\nsound_volume " +sound_volume+
                 "\nsound_pitch " +sound_pitch+
                 "\nas_console " + as_console +
-                "\nexecute_commands " + Arrays.toString(execute_commands.toArray()) +
+                "\nexecute_commands " + Arrays.toString(execute_commands) +
                 "\npotion_effects " + Arrays.toString(potion_effects.toArray()) +
-                "\nremove_potion_effect " + Arrays.toString(remove_potion_effect.toArray())
+                "\nremove_potion_effect " + Arrays.toString(remove_potion_effect)
 
         );
         System.out.println(ChatColor.GREEN+"-----------------------------------------------");

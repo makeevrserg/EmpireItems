@@ -1,14 +1,16 @@
 main: ru.empireprojekt.empireitems.EmpireItems
 name: EmpireItems
-version: 0.1
+version: 2.1
 author: RatushevRoman
 api-version: 1.13
-softdepend: [DiscordSRV]
-depend: [PlaceholderAPI]
+softdepend: [DiscordSRV,PlaceholderAPI,Item-NBT-API]
+depend: []
 commands:
   ereload:
   emsplash:
+  emreplace:
   emp:
+  emr:
   emgui:
   ezip:
   emojis:

@@ -11,6 +11,7 @@ import ru.empireprojekt.empireitems.events.InteractEvent;
 import java.util.*;
 
 public class GenericItem {
+    public boolean isBlock=false;
     public String itemId;
     public String display_name;
     public List<String> lore;
@@ -22,7 +23,7 @@ public class GenericItem {
     public List<?> pattern;
     public Map<Character, String> ingredients;
     public Map<String, Integer> enchantements;
-    public List<InteractEvent> events;
+    public InteractEvent[] events;
     public List<mAttribute> attributes;
     public List<String> itemFlags;
     public Collection<PotionEffect> potionEffects;
@@ -33,7 +34,7 @@ public class GenericItem {
 
 
     public void PrintItem() {
-        System.out.println(ChatColor.GREEN + "---------------------------Loaded item:---------------------------");
+        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.GREEN + "---------------------------Loaded item:---------------------------");
         System.out.println("display_name:" + display_name);
         System.out.println("lore:" + lore.toString());
         System.out.println("permission:" + permission);
