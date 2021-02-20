@@ -1,6 +1,6 @@
 main: ru.empireprojekt.empireitems.EmpireItems
 name: EmpireItems
-version: 2.1
+version: 2.2
 author: RatushevRoman
 api-version: 1.13
 softdepend: [DiscordSRV,PlaceholderAPI,Item-NBT-API]

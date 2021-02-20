@@ -115,7 +115,7 @@ public class GenericListener implements Listener {
         if (e.getDamager() instanceof Player) {
             Player player = (Player) e.getDamager();
             ItemMeta meta = player.getInventory().getItemInMainHand().getItemMeta();
-            if (meta != null) {
+            if (meta != null && meta.getPersistentDataContainer().has(CONSTANTS.empireID,PersistentDataType.STRING)) {
                 String id = meta.getPersistentDataContainer().get(CONSTANTS.empireID, PersistentDataType.STRING);
                 InteractEvent[] events = item_events.get(id);//Получаем эвент конкретного предмета
                 if (events != null)
