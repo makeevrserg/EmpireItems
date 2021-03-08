@@ -18,6 +18,7 @@ import ru.empireprojekt.empireitems.ItemManager.menusystem.Menu;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
 import ru.empireprojekt.empireitems.events.Drop;
 import ru.empireprojekt.empireitems.events.GenericListener;
+import ru.empireprojekt.empireitems.events.ItemUpgradeEvent;
 
 import java.util.*;
 
@@ -36,7 +37,7 @@ public class EmpireCraftMenu extends Menu {
     }
 
     public String getMenuName() {
-        return plugin.CONSTANTS.HEXPattern(plugin.generic_item.getGuiConfig().getString("settings.workbench_ui", "Крафт"));
+        return plugin.CONSTANTS.HEXPattern(plugin.getGuiConfig().getConfig().getString("settings.workbench_ui", "Крафт")+plugin.items.get(item).getItemMeta().getDisplayName());
     }
 
     public int getSlots() {
@@ -91,18 +92,18 @@ public class EmpireCraftMenu extends Menu {
         }
         ItemStack close, drop;
         if (plugin.items.containsKey(
-                plugin.generic_item.getGuiConfig().getString("settings.close_btn", "close")
+                plugin.getGuiConfig().getConfig().getString("settings.close_btn", "close")
         ))
-            close = plugin.items.get(plugin.generic_item.getGuiConfig().getString("settings.close_btn", "close"));
+            close = plugin.items.get(plugin.getGuiConfig().getConfig().getString("settings.close_btn", "close"));
         else close = new ItemStack(Material.BARRIER);
 
         inventory.setItem(49, close);
 
 
         if (plugin.items.containsKey(
-                plugin.generic_item.getGuiConfig().getString("settings.close_btn", "close")
+                plugin.getGuiConfig().getConfig().getString("settings.close_btn", "close")
         ))
-            drop = plugin.items.get(plugin.generic_item.getGuiConfig().getString("settings.drop_btn", "drop"));
+            drop = plugin.items.get(plugin.getGuiConfig().getConfig().getString("settings.drop_btn", "drop"));
         else drop = new ItemStack(Material.BARRIER);
         ItemMeta dropMeta = drop.getItemMeta();
         List<String> dropLore = new ArrayList<String>();
@@ -115,7 +116,7 @@ public class EmpireCraftMenu extends Menu {
             List<String> upgradeLore = new ArrayList<>();
             upgradeMeta.setDisplayName(ChatColor.WHITE + "Улучшает:");
             for (EmpireItems.itemUpgradeClass iUg : plugin.itemUpgradesInfo.get(item)) {
-                upgradeLore.add(ChatColor.GRAY + GenericListener.getStrAttr(iUg.attribute) + ":[" + iUg.min_add + ";" + iUg.max_add + "]");
+                upgradeLore.add(ChatColor.GRAY + ItemUpgradeEvent.getStrAttr(iUg.attribute) + ":[" + iUg.min_add + ";" + iUg.max_add + "]");
             }
             upgradeMeta.setLore(upgradeLore);
             upgrade.setItemMeta(upgradeMeta);
@@ -144,9 +145,9 @@ public class EmpireCraftMenu extends Menu {
         if (playerMenuUtility.getPlayer().hasPermission("empireitems.give")) {
             ItemStack getItem;
             if (plugin.items.containsKey(
-                    plugin.generic_item.getGuiConfig().getString("settings.give_btn")
+                    plugin.getGuiConfig().getConfig().getString("settings.give_btn")
             ))
-                getItem = plugin.items.get(plugin.generic_item.getGuiConfig().getString("settings.give_btn"));
+                getItem = plugin.items.get(plugin.getGuiConfig().getConfig().getString("settings.give_btn"));
             else
                 getItem = new ItemStack(Material.STONE);
             inventory.setItem(43, getItem);

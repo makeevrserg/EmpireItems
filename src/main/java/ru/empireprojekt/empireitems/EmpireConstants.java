@@ -25,6 +25,9 @@ public class EmpireConstants {
     public NamespacedKey GENERIC_ATTACK_KNOCKBACK;
     public NamespacedKey GENERIC_ATTACK_SPEED;
     public NamespacedKey itemExplosionNamespace;
+    public NamespacedKey itemHammer;
+    public NamespacedKey lavaWalker;
+    public NamespacedKey vampirism;
     public EmpireItems plugin;
     EmpireConstants(EmpireItems plugin) {
         this.plugin = plugin;
@@ -43,6 +46,10 @@ public class EmpireConstants {
         durabilityMechanicNamespace = new NamespacedKey(plugin, "durability");
         maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
         ITEM_UPGRADE_COUNT = new NamespacedKey(plugin, "ITEM_UPGRADE_COUNT");
+
+        itemHammer = new NamespacedKey(plugin,"itemHammer");
+        lavaWalker = new NamespacedKey(plugin,"lavaWalker");
+        vampirism = new NamespacedKey(plugin,"vampirism");
 
 
         itemExplosionNamespace = new NamespacedKey(plugin, "onHitGroundExplosion");
@@ -94,6 +101,8 @@ public class EmpireConstants {
         durabilityMechanicNamespace = null;
         maxCustomDurability = null;
         ITEM_UPGRADE_COUNT = null;
+        itemHammer = null;
+        lavaWalker = null;
         GENERIC_ARMOR = null;
         GENERIC_ARMOR_TOUGHNESS = null;
         GENERIC_KNOCKBACK_RESISTANCE = null;
@@ -103,6 +112,7 @@ public class EmpireConstants {
         GENERIC_ATTACK_DAMAGE = null;
         GENERIC_ATTACK_KNOCKBACK = null;
         GENERIC_ATTACK_SPEED = null;
+        vampirism = null;
         itemExplosionNamespace = null;
     }
 

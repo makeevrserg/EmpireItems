@@ -22,7 +22,7 @@ public class EmpireCategoriesMenu extends PaginatedMenu {
     }
 
     public String getMenuName() {
-        return plugin.CONSTANTS.HEXPattern(plugin.generic_item.getGuiConfig().getString("settings.categories_text", "Категории"));
+        return plugin.CONSTANTS.HEXPattern(plugin.getGuiConfig().getConfig().getString("settings.categories_text", "Категории"));
     }
 
     public int getSlots() {

@@ -4,6 +4,7 @@ import com.sun.org.apache.xml.internal.utils.CharKey;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.sun.prism.paint.Color;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.permissions.Permission;
 import org.bukkit.potion.PotionEffect;
 import ru.empireprojekt.empireitems.events.InteractEvent;
@@ -26,6 +27,7 @@ public class GenericItem {
     public InteractEvent[] events;
     public List<mAttribute> attributes;
     public List<String> itemFlags;
+    public HashMap<NamespacedKey,Integer> empireEnchants;
     public Collection<PotionEffect> potionEffects;
     public int amount;
     public int customModelData;
