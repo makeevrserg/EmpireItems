@@ -48,8 +48,8 @@
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
         <repository>
-            <id>purpur</id>
-            <url>https://repo.pl3x.net/</url>
+            <id>papermc</id>
+            <url>https://papermc.io/repo/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -67,22 +67,9 @@
             <version>1.20.0</version>
             <scope>provided</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.spigotmc</groupId>-->
-<!--            <artifactId>spigot-api</artifactId>-->
-<!--            <version>1.16.2-R0.1-SNAPSHOT</version>-->
-<!--            <scope>provided</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.bukkit</groupId>-->
-<!--            <artifactId>bukkit</artifactId>-->
-<!--            <scope>provided</scope>-->
-<!--            &lt;!&ndash; Bukkit API Version, изменить если необходимо &ndash;&gt;-->
-<!--            <version>1.15.2-R0.1-SNAPSHOT</version>-->
-<!--        </dependency>-->
         <dependency>
-            <groupId>net.pl3x.purpur</groupId>
-            <artifactId>purpur-api</artifactId>
+            <groupId>com.destroystokyo.paper</groupId>
+            <artifactId>paper-api</artifactId>
             <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>

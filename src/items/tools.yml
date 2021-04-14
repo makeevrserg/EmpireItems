@@ -1,0 +1,29 @@
+namespace: empire_items
+yml_items:
+  ender_axe:
+    display_name: §dТопор энда
+    permission: empireitems.ender_axe
+    material: NETHERITE_AXE
+    enabled: true
+    texture_path: item/tools/ender_axe.png 
+    custom_model_data: 86
+    item_flags:
+      - HIDE_ATTRIBUTES
+      - HIDE_ENCHANTS
+    durability: 3000
+    pattern:
+    - XXX
+    - XMD
+    - XSX
+    ingredients:
+      M: ender_ingot
+      D: NETHERITE_AXE     
+    attributes:
+      1:
+        name: GENERIC_ATTACK_DAMAGE
+        amount: 15
+        equipment_slot: HAND
+      2:
+        name: GENERIC_ATTACK_SPEED
+        amount: -2
+        equipment_slot: HAND

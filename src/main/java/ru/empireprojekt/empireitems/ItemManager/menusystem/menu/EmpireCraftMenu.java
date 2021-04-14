@@ -37,7 +37,7 @@ public class EmpireCraftMenu extends Menu {
     }
 
     public String getMenuName() {
-        return plugin.CONSTANTS.HEXPattern(plugin.getGuiConfig().getConfig().getString("settings.workbench_ui", "Крафт")+plugin.items.get(item).getItemMeta().getDisplayName());
+        return plugin.CONSTANTS.HEXPattern(plugin.getGuiConfig().getConfig().getString("settings.workbench_ui", "Крафт") + plugin.items.get(item).getItemMeta().getDisplayName());
     }
 
     public int getSlots() {
@@ -45,13 +45,24 @@ public class EmpireCraftMenu extends Menu {
     }
 
     public void handleMenu(InventoryClickEvent e) {
+
         if (e.getCurrentItem() != null) {
+            System.out.println(e.getSlot());
             if (e.getSlot() == 49) {
                 new EmpireCategoryMenu(playerMenuUtility, plugin, slot, page).open();
             } else if (e.getSlot() == 43) {
-                if (playerMenuUtility.getPlayer() != null && playerMenuUtility.getPlayer().hasPermission("empireitems.give") && plugin.items.containsKey(item)) {
-
+                System.out.println("1");
+                if (playerMenuUtility.getPlayer() == null || !playerMenuUtility.getPlayer().hasPermission("empireitems.give"))
+                    return;
+                System.out.println("2 " + item+";"+plugin.items.containsKey(item));
+                if (plugin.items.containsKey(item))
                     playerMenuUtility.getPlayer().getInventory().addItem(plugin.items.get(item));
+                else {
+                    Material material = Material.getMaterial(item);
+                    if (material != null) {
+                        ItemStack itemStack = new ItemStack(material, 1);
+                        playerMenuUtility.getPlayer().getInventory().addItem(itemStack);
+                    }
                 }
             }
         }
@@ -107,7 +118,6 @@ public class EmpireCraftMenu extends Menu {
         else drop = new ItemStack(Material.BARRIER);
         ItemMeta dropMeta = drop.getItemMeta();
         List<String> dropLore = new ArrayList<String>();
-
 
 
         if (plugin.itemUpgradesInfo.containsKey(item)) {

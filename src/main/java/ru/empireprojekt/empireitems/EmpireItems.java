@@ -31,6 +31,7 @@ import ru.empireprojekt.empireitems.events.GenericListener;
 import ru.empireprojekt.empireitems.events.InteractEvent;
 import ru.empireprojekt.empireitems.files.DataManager;
 import ru.empireprojekt.empireitems.files.GenericItemManager;
+import ru.empireprojekt.empireitems.mechanics.thirst.Thirst;
 
 import java.util.*;
 
@@ -105,9 +106,11 @@ public class EmpireItems extends JavaPlugin {
     public DataManager getGuiConfig() {
         return guiConfig;
     }
-    public DataManager getDropsConfig(){
+
+    public DataManager getDropsConfig() {
         return dropsConfig;
     }
+
     private void generateMenuItems() {
         menuItems = new ArrayList<>();
         ConfigurationSection categories = guiConfig.getConfig().getConfigurationSection("categories");
@@ -126,11 +129,14 @@ public class EmpireItems extends JavaPlugin {
             }
     }
 
+    //Thirst thirst;
+
     @Override
     public void onEnable() {
         System.out.println(ChatColor.GREEN + "-----------------------------------------------------------");
         System.out.println(ChatColor.AQUA + "[EmpireItems]" + "Enabling EmpireItems v" + getDescription().getVersion());
         EnableFunc();
+        //thirst = new Thirst(this, mSettings);
         System.out.println(ChatColor.AQUA + "[EmpireItems]" + "Plugin EmpireItems has been Enabled!");
         System.out.println(ChatColor.GREEN + "-----------------------------------------------------------");
 
@@ -190,7 +196,7 @@ public class EmpireItems extends JavaPlugin {
         mSettings.upgradeCostMultiplier = guiConfig.getConfig().getDouble("settings.upgradeCostMultiplier", 1.0);
         mSettings.vampirismMultiplier = guiConfig.getConfig().getDouble("settings.vampirismMultiplier", 0.05);
 
-        dropsConfig = new DataManager("z_drops.yml",this);
+        dropsConfig = new DataManager("drops.yml", this);
 
         LoadGenericItems();
         if (genericListener != null)
@@ -426,11 +432,11 @@ public class EmpireItems extends JavaPlugin {
                 //EmpireEnchants
                 genericItem.empireEnchants = new HashMap<>();
                 if (generic_item.contains("empire_enchants.hammer"))
-                    genericItem.empireEnchants.put(CONSTANTS.itemHammer,generic_item.getInt("empire_enchants.hammer"));
+                    genericItem.empireEnchants.put(CONSTANTS.itemHammer, generic_item.getInt("empire_enchants.hammer"));
                 if (generic_item.contains("empire_enchants.lavaWalker"))
-                    genericItem.empireEnchants.put(CONSTANTS.lavaWalker,generic_item.getInt("empire_enchants.lavaWalker"));
+                    genericItem.empireEnchants.put(CONSTANTS.lavaWalker, generic_item.getInt("empire_enchants.lavaWalker"));
                 if (generic_item.contains("empire_enchants.vampirism"))
-                    genericItem.empireEnchants.put(CONSTANTS.vampirism,generic_item.getInt("empire_enchants.vampirism"));
+                    genericItem.empireEnchants.put(CONSTANTS.vampirism, generic_item.getInt("empire_enchants.vampirism"));
 
 
                 items.put(key, CreateItem(genericItem, key));
@@ -448,7 +454,7 @@ public class EmpireItems extends JavaPlugin {
         if (genericListener != null)
             genericListener.UnregisterListener();
         CONSTANTS.onDestroy();
-
+        //thirst.disable();
         Iterator<Recipe> ite = getServer().recipeIterator();
         Recipe recipe;
         while (ite.hasNext()) {
@@ -535,15 +541,15 @@ public class EmpireItems extends JavaPlugin {
         }
         meta.getPersistentDataContainer().set(CONSTANTS.empireID, PersistentDataType.STRING, genericItem.itemId);
 
-        if (genericItem.empireEnchants!=null){
-            if (genericItem.empireEnchants.containsKey(CONSTANTS.itemHammer)){
-                meta.getPersistentDataContainer().set(CONSTANTS.itemHammer,PersistentDataType.INTEGER,genericItem.empireEnchants.get(CONSTANTS.itemHammer));
+        if (genericItem.empireEnchants != null) {
+            if (genericItem.empireEnchants.containsKey(CONSTANTS.itemHammer)) {
+                meta.getPersistentDataContainer().set(CONSTANTS.itemHammer, PersistentDataType.INTEGER, genericItem.empireEnchants.get(CONSTANTS.itemHammer));
             }
-            if (genericItem.empireEnchants.containsKey(CONSTANTS.lavaWalker)){
-                meta.getPersistentDataContainer().set(CONSTANTS.lavaWalker,PersistentDataType.INTEGER,genericItem.empireEnchants.get(CONSTANTS.lavaWalker));
+            if (genericItem.empireEnchants.containsKey(CONSTANTS.lavaWalker)) {
+                meta.getPersistentDataContainer().set(CONSTANTS.lavaWalker, PersistentDataType.INTEGER, genericItem.empireEnchants.get(CONSTANTS.lavaWalker));
             }
-            if (genericItem.empireEnchants.containsKey(CONSTANTS.vampirism)){
-                meta.getPersistentDataContainer().set(CONSTANTS.vampirism,PersistentDataType.INTEGER,genericItem.empireEnchants.get(CONSTANTS.vampirism));
+            if (genericItem.empireEnchants.containsKey(CONSTANTS.vampirism)) {
+                meta.getPersistentDataContainer().set(CONSTANTS.vampirism, PersistentDataType.INTEGER, genericItem.empireEnchants.get(CONSTANTS.vampirism));
             }
         }
 

@@ -1,0 +1,24 @@
+settings:
+  workbench_ui: "\uF809&f\u01E5\uF80C\uF80A&f"
+  categories_text: "\uF809&f\u01E5\uF80C\uF80A#11d417Категории"
+  drop_btn: more
+  next_btn: next_button
+  prev_btn: prev_button
+  back_btn: back
+  close_btn: cancel
+  give_btn: ender_chest_opened
+  isUpgradeEnabled: true
+  upgradeCostMultiplier: 1.0
+  vampirismMultiplier: 0.05
+emoji:
+  crisps: "\u0181"
+categories:
+  icons:
+    title: "\uF809&f\u01E5\uF80C\uF80A#48d411Иконки"
+    name: "&2Иконки"
+    icon: more
+    lore:
+      - "&7Здесь показаны иконки"
+    permission: emp.categories.icons
+    items:
+      - "back"

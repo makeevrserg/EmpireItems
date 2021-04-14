@@ -1,0 +1,6 @@
+max_thirst: 10
+min_thirst: 0
+thirst_full: "\u01E7"
+thirst_blank: "\u01E8"
+thirst_half: "\u01E9"
+actionbar_offset: "\uF80B\uF80A\uF804"

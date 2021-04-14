@@ -1,0 +1,24 @@
+loot:
+  blocks:
+    END_STONE:
+      entity: END_STONE
+      items:
+        ender_scrap:
+          item: ender_scrap
+          min_amount: 1
+          max_amount: 1
+          chance: 0.1
+        timedust:
+          item: timedust
+          min_amount: 0
+          max_amount: 1
+          chance: 5
+  mobs:
+    ENDER_DRAGON:
+      entity: ENDER_DRAGON
+      items:
+        ender_dragon_scale:
+          item: ender_dragon_scale
+          min_amount: 1
+          max_amount: 5
+          chance: 100

@@ -1,0 +1,9 @@
+namespace: empire_items
+yml_items:
+  splash_gay:
+    display_name: splash_gay
+    permission: empireitems.splash_gay
+    material: TOTEM_OF_UNDYING
+    enabled: true
+    texture_path: item/splash/splash_gay   
+    custom_model_data: 185
