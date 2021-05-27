@@ -17,7 +17,7 @@ public abstract class PaginatedMenu extends Menu {
 
     public void addManageButtons(EmpireItems plugin) {
         ItemStack left;
-        String btn = plugin.getGuiConfig().getConfig().getString("settings.prev_btn");
+        String btn = plugin.getCustomUISettings().getGuiConfig().getConfig().getString("settings.prev_btn");
         if (btn == null || !plugin.items.containsKey(btn)) {
             left = new ItemStack(Material.PAPER, 1);
             ItemMeta leftMeta = left.getItemMeta();
@@ -28,7 +28,7 @@ public abstract class PaginatedMenu extends Menu {
 
         inventory.setItem(45, left);
         ItemStack back;
-        btn = plugin.getGuiConfig().getConfig().getString("settings.back_btn");
+        btn = plugin.getCustomUISettings().getGuiConfig().getConfig().getString("settings.back_btn");
         if (btn == null || !plugin.items.containsKey(btn)) {
             back = new ItemStack(Material.PAPER, 1);
             ItemMeta backMeta = back.getItemMeta();
@@ -40,7 +40,7 @@ public abstract class PaginatedMenu extends Menu {
         inventory.setItem(49, back);
 
         ItemStack right;
-        btn = plugin.getGuiConfig().getConfig().getString("settings.next_btn");
+        btn = plugin.getCustomUISettings().getGuiConfig().getConfig().getString("settings.next_btn");
         if (btn == null || !plugin.items.containsKey(btn)) {
             right = new ItemStack(Material.PAPER, 1);
             ItemMeta rightMeta = right.getItemMeta();

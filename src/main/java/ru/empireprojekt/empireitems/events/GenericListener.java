@@ -1,11 +1,22 @@
 package ru.empireprojekt.empireitems.events;
 
-import de.tr7zw.nbtapi.NBTItem;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.reflect.StructureModifier;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import github.scarsz.discordsrv.api.events.GameChatMessagePreProcessEvent;
 import me.clip.placeholderapi.PlaceholderAPI;
+import org.bouncycastle.util.Pack;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,16 +25,15 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
+import org.json.JSONObject;
 import ru.empireprojekt.empireitems.EmpireConstants;
 import ru.empireprojekt.empireitems.EmpireItems;
 import ru.empireprojekt.empireitems.enchants.Grenade;
@@ -31,18 +41,19 @@ import ru.empireprojekt.empireitems.enchants.Hammer;
 import ru.empireprojekt.empireitems.enchants.LavaWalker;
 import ru.empireprojekt.empireitems.enchants.Vampirism;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class GenericListener implements Listener {
     private Map<String, InteractEvent[]> item_events;
-    private EmpireItems plugin;
+    private EmpireItems empireItems;
     private EmpireConstants CONSTANTS;
 
-    private List<String> messages = new ArrayList<>();
-    private DiscordListener discordListener;
+    //private DiscordListener discordListener;
     private Hammer hammerListener;
     private LavaWalker lavaWalker;
     private Vampirism vampirism;
@@ -50,15 +61,23 @@ public class GenericListener implements Listener {
     private MobDropEvent mobDropEvent;
     private ExpRepairEvent expRepairEvent;
     private ItemUpgradeEvent itemUpgradeEvent;
+    private ResourcePackEvent resourcePackEvent;
+    ProtocolLibHandler protocolLibHandler;
 
     public GenericListener(EmpireItems plugin, Map<String, InteractEvent[]> item_events) {
-        this.plugin = plugin;
+        this.empireItems = plugin;
         this.CONSTANTS = plugin.CONSTANTS;
         this.item_events = item_events;
-        if (plugin.getServer().getPluginManager().getPlugin("DiscordSRV") != null)
-            discordListener = new DiscordListener(plugin);
+//        if (plugin.getServer().getPluginManager().getPlugin("DiscordSRV") != null) {
+//            discordListener = new DiscordListener(plugin);
+//            plugin.getServer().getPluginManager().registerEvents(discordListener,plugin);
+//        }
+//        else
+//            System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "DiscordSRV Is not installed!");
+        if (plugin.getServer().getPluginManager().getPlugin("ProtocolLib") != null)
+            protocolLibHandler = new ProtocolLibHandler(plugin);
         else
-            System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "DiscordSRV Is not installed!");
+            System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "ProtocolLib Is not installed!");
 
         //events.enchants
         hammerListener = new Hammer(plugin);
@@ -68,6 +87,7 @@ public class GenericListener implements Listener {
         mobDropEvent = new MobDropEvent(plugin);
         expRepairEvent = new ExpRepairEvent(plugin);
         itemUpgradeEvent = new ItemUpgradeEvent(plugin);
+        resourcePackEvent = new ResourcePackEvent(plugin);
         plugin.getServer().getPluginManager().registerEvents(hammerListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(lavaWalker, plugin);
         plugin.getServer().getPluginManager().registerEvents(vampirism, plugin);
@@ -75,7 +95,11 @@ public class GenericListener implements Listener {
         plugin.getServer().getPluginManager().registerEvents(mobDropEvent, plugin);
         plugin.getServer().getPluginManager().registerEvents(expRepairEvent, plugin);
         plugin.getServer().getPluginManager().registerEvents(itemUpgradeEvent, plugin);
+        plugin.getServer().getPluginManager().registerEvents(itemUpgradeEvent, plugin);
+        plugin.getServer().getPluginManager().registerEvents(resourcePackEvent, plugin);
+
     }
+
 
     public void UnregisterListener() {
         ProjectileHitEvent.getHandlerList().unregister(this);
@@ -87,6 +111,9 @@ public class GenericListener implements Listener {
         AsyncPlayerChatEvent.getHandlerList().unregister(this);
         PrepareAnvilEvent.getHandlerList().unregister(this);
         InventoryClickEvent.getHandlerList().unregister(this);
+        PlayerResourcePackStatusEvent.getHandlerList().unregister(resourcePackEvent);
+        PlayerJoinEvent.getHandlerList().unregister(resourcePackEvent);
+        PlayerRespawnEvent.getHandlerList().unregister(resourcePackEvent);
         if (hammerListener != null) {
             PlayerInteractEvent.getHandlerList().unregister(hammerListener);
             BlockBreakEvent.getHandlerList().unregister(hammerListener);
@@ -113,24 +140,11 @@ public class GenericListener implements Listener {
             InventoryClickEvent.getHandlerList().unregister(itemUpgradeEvent);
             PrepareAnvilEvent.getHandlerList().unregister(itemUpgradeEvent);
         }
-        if (discordListener != null)
-            discordListener.onDisable();
-        messages = new ArrayList<>();
 
-    }
+        if (protocolLibHandler != null)
+            protocolLibHandler.onDisable();
 
 
-    List<String> getMessages() {
-        return messages;
-    }
-
-    @EventHandler
-    public void onChat(AsyncPlayerChatEvent event) {
-        String msg = event.getMessage();
-        String newMessage = "" + msg + " ";
-        if (discordListener != null)
-            messages.add(newMessage);
-        event.setMessage(plugin.CONSTANTS.GetEmoji(msg, plugin.CONSTANTS.getEmojiPattern()));
     }
 
 
@@ -144,11 +158,11 @@ public class GenericListener implements Listener {
 
             if (meta.getPersistentDataContainer().isEmpty())
                 return;
-            if (!meta.getPersistentDataContainer().has(CONSTANTS.empireID,PersistentDataType.STRING))
+            if (!meta.getPersistentDataContainer().has(CONSTANTS.empireID, PersistentDataType.STRING))
                 return;
 
             String id = meta.getPersistentDataContainer().get(CONSTANTS.empireID, PersistentDataType.STRING);
-            
+
 
             InteractEvent[] events = item_events.get(id);//Получаем эвент конкретного предмета
             if (events != null)
@@ -188,7 +202,7 @@ public class GenericListener implements Listener {
                 List<String> itemLore = meta.getLore();
                 if (itemLore == null || itemLore.size() == 0)
                     itemLore = new ArrayList<>();
-                itemLore.add(plugin.CONSTANTS.HEXPattern("&7Использований: " + durability));
+                itemLore.add(empireItems.CONSTANTS.HEXPattern("&7Использований: " + durability));
                 for (int i = 0; i < itemLore.size() - 1; ++i)
                     if (itemLore.get(i).contains("Использований")) {
                         itemLore.remove(i);
@@ -218,7 +232,7 @@ public class GenericListener implements Listener {
             player.getWorld().spawnParticle(Particle.valueOf(ev.play_particle),
                     player.getLocation().getX(), player.getLocation().getY() + 2, player.getLocation().getZ(),
                     ev.particle_count, 0, 0, 0, ev.particle_time);
-        if (ev.execute_commands != null && plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+        if (ev.execute_commands != null && empireItems.getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             for (String cmd : ev.execute_commands)
                 if (!ev.as_console)
                     player.performCommand(PlaceholderAPI.setPlaceholders(player, cmd));
@@ -231,6 +245,7 @@ public class GenericListener implements Listener {
             for (PotionEffectType effect : ev.remove_potion_effect)
                 player.removePotionEffect(effect);
     }
+
 
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent event) {

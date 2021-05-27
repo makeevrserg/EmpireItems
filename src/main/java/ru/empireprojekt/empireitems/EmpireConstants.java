@@ -3,13 +3,14 @@ package ru.empireprojekt.empireitems;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EmpireConstants {
 
-    public String PLUGIN_MESSAGE = ChatColor.AQUA + "[EmpireItems]"+ChatColor.GREEN;
+    public String PLUGIN_MESSAGE = ChatColor.AQUA + "[EmpireItems] " + ChatColor.GREEN;
 
     public NamespacedKey empireID;
     public NamespacedKey durabilityMechanicNamespace;
@@ -29,6 +30,7 @@ public class EmpireConstants {
     public NamespacedKey lavaWalker;
     public NamespacedKey vampirism;
     public EmpireItems plugin;
+
     EmpireConstants(EmpireItems plugin) {
         this.plugin = plugin;
         GENERIC_ATTACK_DAMAGE = new NamespacedKey(plugin, "GENERIC_ATTACK_DAMAGE");
@@ -47,37 +49,53 @@ public class EmpireConstants {
         maxCustomDurability = new NamespacedKey(plugin, "maxCustomDurability");
         ITEM_UPGRADE_COUNT = new NamespacedKey(plugin, "ITEM_UPGRADE_COUNT");
 
-        itemHammer = new NamespacedKey(plugin,"itemHammer");
-        lavaWalker = new NamespacedKey(plugin,"lavaWalker");
-        vampirism = new NamespacedKey(plugin,"vampirism");
+        itemHammer = new NamespacedKey(plugin, "itemHammer");
+        lavaWalker = new NamespacedKey(plugin, "lavaWalker");
+        vampirism = new NamespacedKey(plugin, "vampirism");
 
 
         itemExplosionNamespace = new NamespacedKey(plugin, "onHitGroundExplosion");
 
     }
-    private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]{3}|[a-zA-Z0-9_]{4}|[a-zA-Z0-9_]{5}|[a-zA-Z0-9_]{6}|[a-zA-Z0-9_]{7}|[a-zA-Z0-9_]{8}|[a-zA-Z0-9_]{9}|[a-zA-Z0-9_]{10}|[a-zA-Z0-9_]{11}|[a-zA-Z0-9_]{12}|[a-zA-Z0-9_]{13}):");
-    public final Pattern getEmojiPattern(){
+
+    private final Pattern emojiPattern = Pattern.compile(":([a-zA-Z0-9_]*):");
+
+
+    public final Pattern getEmojiPattern() {
         return emojiPattern;
     }
-    public String GetEmoji(String msg, Pattern pattern) {
-        Matcher matcher = pattern.matcher(msg);
+
+    public String GetEmoji(String msg) {
+        return StringToUnicode(msg,plugin.getCustomUISettings().emojis);
+    }
+    public String GetUi(String msg) {
+        HashMap<String,String> map = new HashMap<>();
+        map.putAll(plugin.getCustomUISettings().guis);
+        map.putAll(plugin.getCustomUISettings().emojis);
+        map.putAll(plugin.getCustomUISettings().offsetsUi);
+        return StringToUnicode(msg,map);
+    }
+    public String StringToUnicode(String msg, HashMap<String, String> map) {
+        Matcher matcher = emojiPattern.matcher(msg);
         while (matcher.find()) {
             String emoji = msg.substring(matcher.start(), matcher.end());
-            String toReplace = plugin.emojis.get(emoji);
+            String toReplace = map.get(emoji);
             if (toReplace == null)
                 toReplace = emoji.replaceAll(":", "");
+
             msg = msg.replace(emoji, toReplace + "");
-            matcher = pattern.matcher(msg);
+            matcher = emojiPattern.matcher(msg);
         }
+        msg = HEXPattern(msg);
         return msg;
     }
 
+    private final Pattern hexPattern = Pattern.compile("#[a-fA-F0-9]{6}|&#[a-fA-F0-9]{6}");
 
-    private final Pattern hexPattern = Pattern.compile("#[a-fA-F0-9]{6}");
-
-    public final Pattern getHexPattern(){
+    public final Pattern getHexPattern() {
         return hexPattern;
     }
+
     public List<String> HEXPattern(List<String> list) {
         for (int i = 0; i < list.size(); ++i)
             list.set(i, HEXPattern(list.get(i)));
@@ -89,7 +107,9 @@ public class EmpireConstants {
         Matcher match = hexPattern.matcher(line);
         while (match.find()) {
             String color = line.substring(match.start(), match.end());
-            line = line.replace(color, net.md_5.bungee.api.ChatColor.of(color) + "");
+            line = line.replace(color, net.md_5.bungee.api.ChatColor.of(
+                    color.startsWith("&")?color.substring(1):color
+            ) + "");
             match = hexPattern.matcher(line);
         }
         return ChatColor.translateAlternateColorCodes('&', line);

@@ -18,6 +18,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import ru.empireprojekt.empireitems.EmpireConstants;
 import ru.empireprojekt.empireitems.EmpireItems;
+import ru.empireprojekt.empireitems.ItemUpgradeManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,11 +174,11 @@ public class ItemUpgradeEvent implements Listener {
                             assert resultMeta != null;
                             PersistentDataContainer resultContainer = resultMeta.getPersistentDataContainer();
                             //Если ингридиент снижает стоимость апгрейда
-                            if (plugin.itemUpgradeCostDecreaser.containsKey(ingrId)) {
+                            if (plugin.getItemUpgradeManager().getItemUpgradeCostDecreaser().containsKey(ingrId)) {
                                 if (oldItemContainer.has(CONSTANTS.ITEM_UPGRADE_COUNT, PersistentDataType.INTEGER))
                                     //noinspection ConstantConditions
                                     upgradeCount -= oldItemContainer.get(CONSTANTS.ITEM_UPGRADE_COUNT, PersistentDataType.INTEGER);
-                                int upgradeDecrease = (int) (plugin.itemUpgradeCostDecreaser.get(ingrId) * (double) ingredient.getAmount());
+                                int upgradeDecrease = (int) (plugin.getItemUpgradeManager().getItemUpgradeCostDecreaser().get(ingrId) * (double) ingredient.getAmount());
                                 upgradeCount -= upgradeDecrease;
                                 if (upgradeCount <= 0)
                                     upgradeCount = 1;
@@ -188,10 +189,10 @@ public class ItemUpgradeEvent implements Listener {
                                 plugin.getServer().getScheduler().runTask(plugin, () -> e.getInventory().setRepairCost(ingredient.getAmount()));
 
 
-                            } else if (plugin.itemUpgradesInfo.containsKey(ingridientContainer.get(CONSTANTS.empireID, PersistentDataType.STRING))) {
+                            } else if (plugin.getItemUpgradeManager().itemUpgradesInfo.containsKey(ingridientContainer.get(CONSTANTS.empireID, PersistentDataType.STRING))) {
                                 resultContainer.set(CONSTANTS.ITEM_UPGRADE_COUNT, PersistentDataType.INTEGER, upgradeCount);
                                 upgradeCount -= ingredient.getAmount();
-                                for (EmpireItems.itemUpgradeClass iUpg : plugin.itemUpgradesInfo.get(ingrId)) {
+                                for (ItemUpgradeManager.itemUpgradeClass iUpg : plugin.getItemUpgradeManager().itemUpgradesInfo.get(ingrId)) {
                                     double amount = (iUpg.min_add + (Math.random() * (iUpg.max_add - iUpg.min_add))) * ingredient.getAmount();
                                     if (itemBefore.getType().toString().toLowerCase().contains("helmet"))
                                         iUpg.slot = EquipmentSlot.HEAD.name();

@@ -19,7 +19,7 @@ public class Grenade implements Listener {
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent e) {
-        if (!(e.getEntity() instanceof Player))
+        if (!(e.getEntity().getShooter() instanceof Player))
             return;
         Player player = (Player) (e.getEntity().getShooter());
         ItemStack itemStack = player.getInventory().getItemInMainHand();
@@ -27,7 +27,6 @@ public class Grenade implements Listener {
         NamespacedKey itemExplosionNamespace = new NamespacedKey(plugin, "onHitGroundExplosion");
         if (meta == null)
             return;
-        System.out.println("Check" + meta.getPersistentDataContainer().has(itemExplosionNamespace, PersistentDataType.INTEGER));
         if (!meta.getPersistentDataContainer().has(itemExplosionNamespace, PersistentDataType.INTEGER))
             return;
         Integer explosionPower = meta.getPersistentDataContainer().get(itemExplosionNamespace, PersistentDataType.INTEGER);

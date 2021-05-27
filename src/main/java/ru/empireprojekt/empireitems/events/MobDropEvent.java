@@ -31,14 +31,14 @@ public class MobDropEvent implements Listener {
     public void blockBreak(BlockBreakEvent e) {
         Block block = e.getBlock();
         //Чекаем есть ли дроп с блока в конфигах
-        for (String blockKey : plugin.blockDrops.keySet())
+        for (String blockKey : plugin.getItemDropManager().getBlocksDrops().keySet())
             if (Material.getMaterial(blockKey) != null && Material.getMaterial(blockKey) == e.getBlock().getBlockData().getMaterial()) {
                 if (blockLocations.size() > 8)
                     blockLocations.remove(0);
                 if (blockLocations.contains(block.getLocation()))
                     return;
 
-                for (Drop drop : plugin.blockDrops.get(blockKey))
+                for (Drop drop : plugin.getItemDropManager().getBlocksDrops().get(blockKey))
                     e.setDropItems(!DropManager(drop, block));
 
                 blockLocations.add(block.getLocation());
@@ -75,9 +75,9 @@ public class MobDropEvent implements Listener {
     @EventHandler
     public void mobDeath(EntityDeathEvent e) {
         Entity entity = e.getEntity();
-        for (String sEnt : plugin.mobDrops.keySet())
+        for (String sEnt : plugin.getItemDropManager().getMobDrops().keySet())
             if (EntityType.valueOf(sEnt) == entity.getType())
-                for (Drop drop : plugin.mobDrops.get(sEnt))
+                for (Drop drop : plugin.getItemDropManager().getMobDrops().get(sEnt))
                     DropManager(drop, entity);
     }
 

@@ -1,5 +1,10 @@
 package ru.empireprojekt.empireitems.enchants;
 
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -12,7 +17,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import ru.empireprojekt.empireitems.EmpireConstants;
 import ru.empireprojekt.empireitems.EmpireItems;
-
 import java.util.*;
 
 public class Hammer implements Listener {
@@ -45,8 +49,18 @@ public class Hammer implements Listener {
 
     @EventHandler
     void PlayerBreakEvent(BlockBreakEvent e) {
-        if (e.isCancelled())
-            return;
+        Player p = e.getPlayer();
+        Block b = e.getBlock();
+
+        if (plugin.getServer().getPluginManager().getPlugin("WorldGuard")!=null) {
+            RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+            com.sk89q.worldedit.util.Location loc = BukkitAdapter.adapt(b.getLocation());
+            com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(b.getWorld());
+            if (!WorldGuard.getInstance().getPlatform().getSessionManager().hasBypass(WorldGuardPlugin.inst().wrapPlayer(p), world))
+                if (!query.testState(loc, WorldGuardPlugin.inst().wrapPlayer(p), Flags.BUILD))
+                    return;
+        }
+
         ItemStack itemStack = e.getPlayer().getInventory().getItemInMainHand();
         ItemMeta itemMeta = itemStack.getItemMeta();
         if (itemMeta==null)
@@ -57,7 +71,6 @@ public class Hammer implements Listener {
         blockFace.remove(e.getPlayer());
         if (side != null) {
             List<Block> blocks = new ArrayList<>();
-            Block b = e.getBlock();
             switch (side) {
                 case 0:
                     blocks.add(b.getRelative(BlockFace.NORTH));

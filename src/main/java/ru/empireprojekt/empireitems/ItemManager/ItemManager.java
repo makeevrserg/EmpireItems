@@ -2,11 +2,12 @@ package ru.empireprojekt.empireitems.ItemManager;
 
 import com.google.gson.*;
 import org.bukkit.ChatColor;
+import org.json.simple.JSONValue;
+import ru.empireprojekt.empireitems.CustomUISettings;
 import ru.empireprojekt.empireitems.EmpireItems;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class ItemManager {
@@ -45,10 +46,9 @@ public class ItemManager {
         items = new ArrayList<mItem>();
     }
 
-    public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data,boolean isBlock) {
-        items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data,isBlock));
+    public void AddItem(String namespace, String texture_path, String model_path, String item_name, String material, int custom_model_data, boolean isBlock) {
+        items.add(new mItem(namespace, texture_path, model_path, item_name, material, custom_model_data, isBlock));
     }
-
 
 
     private JsonObject GetBowObject(int pulling, String model, String namespace, int custom_model_data) {
@@ -100,20 +100,76 @@ public class ItemManager {
         itemObj.addProperty("parent", parent);
         JsonObject layer = new JsonObject();
         layer.addProperty("layer0", namespace + ":" + layerPath.replace(".png", ""));
-        if (parent.contains("block_real")){
+        if (parent.contains("block_real")) {
 
-            layer.addProperty("all",namespace + ":" + layerPath.replace(".png", ""));
-            layer.addProperty("particle",namespace + ":" + layerPath.replace(".png", ""));
+            layer.addProperty("all", namespace + ":" + layerPath.replace(".png", ""));
+            layer.addProperty("particle", namespace + ":" + layerPath.replace(".png", ""));
 
         }
         itemObj.add("textures", layer);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator + namespace + File.separator+"models"+File.separator+"auto_generated"+File.separator + modelName + ".json");
+        FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + namespace + File.separator + "models" + File.separator + "auto_generated" + File.separator + modelName + ".json");
         file.write(gson.toJson(itemObj));
         file.close();
 
         return itemObj;
+    }
+
+    private JsonObject GetUIJson( CustomUISettings.InterfaceItem interfaceItem){
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("file", interfaceItem.namespace + ":" + interfaceItem.path);
+        JsonArray tempJSArray = new JsonArray();
+        tempJSArray.add(String.valueOf(interfaceItem.chars));
+        jsonObject.add("chars", tempJSArray);
+
+        jsonObject.addProperty("height", interfaceItem.size);
+        jsonObject.addProperty("ascent", interfaceItem.offset);
+        jsonObject.addProperty("type", "bitmap");
+        return jsonObject;
+    }
+
+    public void GenerateInterfaceJson() throws IOException {
+        System.out.println(plugin.CONSTANTS.PLUGIN_MESSAGE + "Generating interface Json");
+        String defaultJsonPath = plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + "minecraft" + File.separator + "font" + File.separator + "default" + ".json";
+        FileReader reader = new FileReader(defaultJsonPath);
+
+        JsonObject jsonFile = new JsonParser().parse(reader).getAsJsonObject();
+        reader.close();
+        JsonArray providers = new JsonArray();
+
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("type", "ttf");
+        jsonObject.addProperty("file", "minecraft:negative_spaces.ttf");
+        JsonArray tempJSArray = new JsonArray();
+        tempJSArray.add(0.0);
+        tempJSArray.add(0.0);
+        jsonObject.add("shift", tempJSArray);
+        jsonObject.addProperty("size", 10.0);
+        jsonObject.addProperty("oversample", 1);
+        jsonFile.remove("providers");
+
+        providers.add(jsonObject);
+        for (CustomUISettings.InterfaceItem interfaceItem : plugin.getCustomUISettings().getGuiItems()) {
+            if (interfaceItem.hasNull())
+                continue;
+            jsonObject = GetUIJson(interfaceItem);
+            providers.add(jsonObject);
+        }
+        for (CustomUISettings.InterfaceItem interfaceItem : plugin.getCustomUISettings().getEmojiItems()) {
+            if (interfaceItem.hasNull())
+                continue;
+            jsonObject = GetUIJson(interfaceItem);
+            providers.add(jsonObject);
+        }
+
+        jsonFile.add("providers", providers);
+        FileWriter file = new FileWriter(defaultJsonPath);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String result = gson.toJson(jsonFile);
+        result = result.replace("\\\\","\\");
+        file.write(result);
+        file.close();
     }
 
     public void GenerateMinecraftModels() {
@@ -121,7 +177,7 @@ public class ItemManager {
         //Чистим файыл
         for (mItem item : items) {
             try {
-                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
+                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + "minecraft" + File.separator + "models" + File.separator + "item" + File.separator + item.material.toLowerCase() + ".json");
                 JsonObject jsonFile = (JsonObject) jsonParser.parse(reader);
                 JsonArray overrides = new JsonArray();
 
@@ -142,25 +198,32 @@ public class ItemManager {
                 }
 
 
-                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
+                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + "minecraft" + File.separator + "models" + File.separator + "item" + File.separator + item.material.toLowerCase() + ".json");
 
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 file.write(gson.toJson(jsonFile));
                 file.close();
             } catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.RED + "Не удалось очистить файл: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "Не удалось очистить файл: " + item.material + ".json");
             }
         }
 
+        System.out.println(plugin.CONSTANTS.PLUGIN_MESSAGE + ChatColor.YELLOW + "Generating Interface");
+        try {
+            GenerateInterfaceJson();
+        } catch (IOException e) {
+            System.out.println(plugin.CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "Error while Generating Interface");
+            e.printStackTrace();
+        }
 
-        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Generating Models");
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Generating Models");
         for (mItem item : items) {
             try {
                 //Generating minecraft models
                 //System.out.println(plugin.getDataFolder() + "\\pack\\assets\\minecraft\\models\\item\\" + item.material.toLowerCase() + ".json");
                 //Открыли существующий файл
-                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
+                FileReader reader = new FileReader(plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + "minecraft" + File.separator + "models" + File.separator + "item" + File.separator + item.material.toLowerCase() + ".json");
                 JsonObject jsonFile = (JsonObject) jsonParser.parse(reader);
                 reader.close();
                 if (item.material.toLowerCase().equals("bow")) {
@@ -218,7 +281,7 @@ public class ItemManager {
                     }
                 }
 
-                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator+"pack"+File.separator+"assets"+File.separator+"minecraft"+File.separator+"models"+File.separator+"item"+File.separator + item.material.toLowerCase() + ".json");
+                FileWriter file = new FileWriter(plugin.getDataFolder() + File.separator + "pack" + File.separator + "assets" + File.separator + "minecraft" + File.separator + "models" + File.separator + "item" + File.separator + item.material.toLowerCase() + ".json");
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 file.write(gson.toJson(jsonFile));
                 file.close();
@@ -226,17 +289,17 @@ public class ItemManager {
 
             } catch (FileNotFoundException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Не найден файл: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Не найден файл: " + item.material + ".json");
             } catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.YELLOW + "Возникла ошибка при выполении файла: " + item.material + ".json");
+                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + "Возникла ошибка при выполении файла: " + item.material + ".json");
             }
         }
     }
 
 
     public void print() {
-        System.out.println(ChatColor.AQUA+"[EmpireItems]"+ChatColor.GREEN + "--------------------------ItemManager--------------------------");
+        System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "--------------------------ItemManager--------------------------");
         for (mItem item : items) {
 
             System.out.println("namespace: " + item.namespace);

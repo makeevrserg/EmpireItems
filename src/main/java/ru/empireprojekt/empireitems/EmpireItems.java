@@ -25,13 +25,9 @@ import ru.empireprojekt.empireitems.ItemManager.mAttribute;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.MenuItems;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.MenuListener;
 import ru.empireprojekt.empireitems.ItemManager.menusystem.PlayerMenuUtility;
-import ru.empireprojekt.empireitems.events.CommandManager;
-import ru.empireprojekt.empireitems.events.Drop;
-import ru.empireprojekt.empireitems.events.GenericListener;
-import ru.empireprojekt.empireitems.events.InteractEvent;
+import ru.empireprojekt.empireitems.events.*;
 import ru.empireprojekt.empireitems.files.DataManager;
 import ru.empireprojekt.empireitems.files.GenericItemManager;
-import ru.empireprojekt.empireitems.mechanics.thirst.Thirst;
 
 import java.util.*;
 
@@ -45,26 +41,25 @@ public class EmpireItems extends JavaPlugin {
     public GenericListener genericListener;
     private ItemManager itemManager;
     public List<MenuItems> menuItems;
-    public HashMap<String, Drop[]> mobDrops;
-    public HashMap<String, Drop[]> blockDrops;
     private HashMap<Integer, String> usedModelData;
     private static final HashMap<Player, PlayerMenuUtility> playerMenuUtilityMap = new HashMap<>();
     private MenuListener menuListener;
     private int maxCustomModelDate = 0;
     public EmpireConstants CONSTANTS;
-
     public PluginSettings mSettings;
-    public HashMap<String, List<itemUpgradeClass>> itemUpgradesInfo;
-    public HashMap<String, Double> itemUpgradeCostDecreaser;
-    HashMap<String, String> emojis;
+
+    private ItemDropManager itemDropManager;
     CommandManager empireCommandManager;
-    DataManager guiConfig;
-    DataManager dropsConfig;
+    CustomUISettings customUISettings;
+    ItemUpgradeManager itemUpgradeManager;
 
-    public HashMap<String, String> getEmojis() {
-        return emojis;
+
+    public ItemDropManager getItemDropManager(){
+        return itemDropManager;
     }
-
+    public ItemUpgradeManager getItemUpgradeManager(){
+        return itemUpgradeManager;
+    }
     public Map<String, ItemStack> getEmprieItems() {
         return items;
     }
@@ -77,17 +72,13 @@ public class EmpireItems extends JavaPlugin {
         return itemManager;
     }
 
-    public static class itemUpgradeClass {
-        public String attribute;
-        public String slot;
-        public double max_add;
-        public double min_add;
-    }
-
     public static class PluginSettings {
         public boolean isUpgradeEnabled = true;
         public double upgradeCostMultiplier = 1.0;
         public double vampirismMultiplier = 0.05;
+        public String tabPrefix = null;
+        public String resourcePack;
+        public boolean downloadResourcePackOnJoin = false;
     }
 
 
@@ -103,17 +94,14 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
-    public DataManager getGuiConfig() {
-        return guiConfig;
+    public CustomUISettings getCustomUISettings() {
+        return customUISettings;
     }
 
-    public DataManager getDropsConfig() {
-        return dropsConfig;
-    }
 
     private void generateMenuItems() {
         menuItems = new ArrayList<>();
-        ConfigurationSection categories = guiConfig.getConfig().getConfigurationSection("categories");
+        ConfigurationSection categories = customUISettings.getGuiConfig().getConfig().getConfigurationSection("categories");
         if (categories != null)
             for (String key : categories.getKeys(false)) {
                 ConfigurationSection sect = categories.getConfigurationSection(key);
@@ -129,6 +117,7 @@ public class EmpireItems extends JavaPlugin {
             }
     }
 
+
     //Thirst thirst;
 
     @Override
@@ -142,17 +131,6 @@ public class EmpireItems extends JavaPlugin {
 
     }
 
-
-    private void GenerateEmoji() {
-        emojis = new HashMap<>();
-        if (guiConfig.getConfig().contains("emoji"))
-            for (String key : guiConfig.getConfig().getConfigurationSection("emoji").getKeys(false)) {
-                emojis.put(
-                        ":" + key + ":",
-                        guiConfig.getConfig().getString("emoji." + key)
-                );
-            }
-    }
 
     //Функция для перезапуска, не надо трогать
     private void EnableFunc() {
@@ -178,26 +156,28 @@ public class EmpireItems extends JavaPlugin {
         else
             System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "ProtocolLib не Найден");
 
-        itemUpgradesInfo = new HashMap<>();
-        itemUpgradeCostDecreaser = new HashMap<>();
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null)
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + "WorldGuard Найден");
+        else
+            System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.RED + "WorldGuard не Найден");
+        itemUpgradeManager = new ItemUpgradeManager(this);
         itemManager = new ItemManager(this);
         item_events = new HashMap<>();
         usedModelData = new HashMap<>();
         items = new HashMap<>();
         itemRecipe = new HashMap<>();
-        mobDrops = new HashMap<>();
-        blockDrops = new HashMap<>();
+        itemDropManager = new ItemDropManager(this);
 
         mSettings = new PluginSettings();
 
         this.generic_item = new GenericItemManager(this);
-        guiConfig = new DataManager("gui.yml", this);
-        mSettings.isUpgradeEnabled = guiConfig.getConfig().getBoolean("settings.isUpgradeEnabled", true);
-        mSettings.upgradeCostMultiplier = guiConfig.getConfig().getDouble("settings.upgradeCostMultiplier", 1.0);
-        mSettings.vampirismMultiplier = guiConfig.getConfig().getDouble("settings.vampirismMultiplier", 0.05);
-
-        dropsConfig = new DataManager("drops.yml", this);
-
+        customUISettings = new CustomUISettings(this);
+        mSettings.isUpgradeEnabled = customUISettings.getGuiConfig().getConfig().getBoolean("settings.isUpgradeEnabled", true);
+        mSettings.upgradeCostMultiplier = customUISettings.getGuiConfig().getConfig().getDouble("settings.upgradeCostMultiplier", 1.0);
+        mSettings.vampirismMultiplier = customUISettings.getGuiConfig().getConfig().getDouble("settings.vampirismMultiplier", 0.05);
+        mSettings.tabPrefix = customUISettings.getGuiConfig().getConfig().getString("settings.tabList", null);
+        mSettings.downloadResourcePackOnJoin = customUISettings.getGuiConfig().getConfig().getBoolean("settings.downloadResourcePackOnJoin", false);
+        mSettings.resourcePack = customUISettings.getGuiConfig().getConfig().getString("settings.resourcePack", null);
         LoadGenericItems();
         if (genericListener != null)
             genericListener.UnregisterListener();
@@ -206,11 +186,12 @@ public class EmpireItems extends JavaPlugin {
         tabCompletition = new TabCompletition(itemManager.GetNames());
         getCommand("emp").setTabCompleter(tabCompletition);
         getCommand("empireitems").setTabCompleter(tabCompletition);
-        GenerateEmoji();
+
 
         System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "Item upgrade enabled:" + mSettings.isUpgradeEnabled);
         System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.GREEN + "Upgrade Cost multiplier:" + mSettings.upgradeCostMultiplier);
         generateMenuItems();
+
         if (menuListener != null)
             InventoryClickEvent.getHandlerList().unregister(menuListener);
         menuListener = new MenuListener();
@@ -219,52 +200,28 @@ public class EmpireItems extends JavaPlugin {
     }
 
 
-    //Создание дропа предметов drops.yml <String=Name of Entity,Drop=drop>
-    private void getDrop(HashMap<String, Drop[]> map, ConfigurationSection section) {
-        for (String key_ : section.getKeys(false)) {
-            ConfigurationSection sect = section.getConfigurationSection(key_);
-            List<Drop> mDrops = new ArrayList<Drop>();
-            if (sect != null && !sect.contains("entity")) {
-                System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + key_ + " Не содержит entity!");
-            }
-            for (String itemKey : sect.getConfigurationSection("items").getKeys(false)) {
-                ConfigurationSection mItem = sect.getConfigurationSection("items." + itemKey);
-                if (mItem != null && mItem.contains("item"))
-                    mDrops.add(new Drop(
-                            mItem.getString("item"),
-                            mItem.getInt("min_amount", 0),
-                            mItem.getInt("max_amount", 0),
-                            mItem.getDouble("chance", 0.0)
-                    ));
-                else
-                    System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.YELLOW + key_ + " Не содержит выпадаемого предмета");
-            }
-            Drop[] drop = new Drop[0];
-            drop = mDrops.toArray(drop);
-            map.put(sect.getString("entity"), drop);
-        }
-    }
+
+
 
     //Загрузка предметов из файлов
     private void LoadGenericItems() {
-
-
         //Лут с мобов находится под полем loot
-        if (getDropsConfig().getConfig().contains("loot")) {
+        if (itemDropManager.getDropsConfig().getConfig().contains("loot")) {
             System.out.println("Drop");
-            ConfigurationSection loot = getDropsConfig().getConfig().getConfigurationSection("loot");
+            ConfigurationSection loot = itemDropManager.getDropsConfig().getConfig().getConfigurationSection("loot");
             if (loot != null && loot.contains("mobs")) {
                 ConfigurationSection mobs = loot.getConfigurationSection("mobs");
-                getDrop(mobDrops, mobs);
+                getItemDropManager().getDrop(getItemDropManager().getMobDrops(), mobs);
             }
             if (loot != null && loot.contains("blocks")) {
                 ConfigurationSection blocks = loot.getConfigurationSection("blocks");
-                getDrop(blockDrops, blocks);
+                getItemDropManager().getDrop(getItemDropManager().getBlocksDrops(), blocks);
             }
         }
 
         //Получаем списко всех .yml файлов
         List<FileConfiguration> file_generic_items = generic_item.getConfig();
+
         for (FileConfiguration file_generic_item : file_generic_items) {
             //если это файл с предметами, он должен быть под поле yml_items
             ConfigurationSection yml_items = file_generic_item.getConfigurationSection("yml_items");
@@ -289,22 +246,11 @@ public class EmpireItems extends JavaPlugin {
                     System.out.println(ChatColor.AQUA + "[EmpireItems]" + ChatColor.RED + "display_name permission enabled  material custom_model_data (texture_path or model_path)");
                     continue;
                 }
-                if (generic_item.contains("UPGRADE_COST_DECREASE")) {
-                    itemUpgradeCostDecreaser.put(key, generic_item.getDouble("UPGRADE_COST_DECREASE"));
-                }
-                if (generic_item.contains("upgrade")) {
-                    List<itemUpgradeClass> mUpgrades = new ArrayList<>();
-                    for (String itemAttribyte : generic_item.getConfigurationSection("upgrade").getKeys(false)) {
-                        itemUpgradeClass upgrade = new itemUpgradeClass();
-                        upgrade.attribute = itemAttribyte;
-                        upgrade.max_add = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getDouble("max_add", 0.0);
-                        upgrade.min_add = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getDouble("min_add", 0.0);
-                        upgrade.slot = generic_item.getConfigurationSection("upgrade").getConfigurationSection(itemAttribyte).getString("slot", "HAND");
-                        mUpgrades.add(upgrade);
-                    }
-                    itemUpgradesInfo.put(key, mUpgrades);
+                if (generic_item.contains("UPGRADE_COST_DECREASE"))
+                    itemUpgradeManager.AddUpgradeDecreaser(key, generic_item.getDouble("UPGRADE_COST_DECREASE"));
+                if (generic_item.contains("upgrade"))
+                    itemUpgradeManager.AddUpgrade(key, itemUpgradeManager.GetUpgrades(generic_item));
 
-                }
                 genericItem.itemId = key;
                 genericItem.isBlock = generic_item.getBoolean("isBlock", false);
                 genericItem.display_name = CONSTANTS.HEXPattern(generic_item.getString("display_name"));
@@ -451,10 +397,14 @@ public class EmpireItems extends JavaPlugin {
 
     private void DisablePlugin() {
 
+        System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + " Disabling Listeners");
+        getServer().getScheduler().cancelTasks(this);
         if (genericListener != null)
             genericListener.UnregisterListener();
+        System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + " Disabling Constants");
         CONSTANTS.onDestroy();
         //thirst.disable();
+        System.out.println(CONSTANTS.PLUGIN_MESSAGE + ChatColor.GREEN + " Disabling Recipes");
         Iterator<Recipe> ite = getServer().recipeIterator();
         Recipe recipe;
         while (ite.hasNext()) {

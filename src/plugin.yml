@@ -17,6 +17,7 @@ commands:
   emojis:
   emnbt:
   emrepair:
+  empack:
   empireitems:
     usage: |
       /ereload - Перезагружает плагин

@@ -43,6 +43,7 @@ public class CommandManager implements CommandExecutor {
         plugin.getCommand("emp").setExecutor(this);
         plugin.getCommand("empireitems").setExecutor(this);
         plugin.getCommand("ezip").setExecutor(this);
+        plugin.getCommand("empack").setExecutor(this);
 
     }
 
@@ -97,6 +98,18 @@ public class CommandManager implements CommandExecutor {
         }
         if ((label.equalsIgnoreCase("emreplace") || label.equalsIgnoreCase("emr")) && (sender instanceof Player)) {
             CheckReplaceItem((Player) sender);
+        }
+        if (label.equalsIgnoreCase("empack")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                if (plugin.mSettings.resourcePack == null) {
+                    player.sendMessage(plugin.CONSTANTS.PLUGIN_MESSAGE + "Скачайте самостоятельно с EmpireProjekt.ru...");
+                    return false;
+                }
+                player.sendMessage(plugin.CONSTANTS.PLUGIN_MESSAGE + "Пытаемся загрузить ресурс-пак...");
+                player.sendMessage(plugin.CONSTANTS.PLUGIN_MESSAGE + "Не забудьте в настройках при выборе сервера разрешить ресурс-паки...");
+                player.setResourcePack(plugin.mSettings.resourcePack);
+            }
         }
         if (label.equalsIgnoreCase("emrepair")) {
             if (sender instanceof Player) {
@@ -157,9 +170,9 @@ public class CommandManager implements CommandExecutor {
             String list = "";
             List<String> pages = new ArrayList<String>();
             int count = 0;
-            for (String emoji : plugin.getEmojis().keySet()) {
+            for (String emoji : plugin.getCustomUISettings().getEmojis().keySet()) {
                 count++;
-                list += emoji + "  =  " + "&f" + plugin.getEmojis().get(emoji) + "&r" + "\n";
+                list += emoji + "  =  " + "&f" + plugin.getCustomUISettings().getEmojis().get(emoji) + "&r" + "\n";
                 if (count % 14 == 0) {
                     pages.add(list);
                     list = "";
